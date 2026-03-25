@@ -207,7 +207,24 @@ if (function_exists('acf_add_local_field_group')) {
 }
 
 // =============================================
-// 6. OTTIMIZZAZIONI
+// 6. FILTRO REST API — Camere
+// =============================================
+
+// Forza la query REST ad includere tutti i post pubblicati
+add_filter('rest_camera_query', function ($args, $request) {
+    // Assicura che vengono restituiti tutti i post pubblicati
+    if (empty($args['post_status'])) {
+        $args['post_status'] = 'publish';
+    }
+    // Se non è specificato per_page, consenti più risultati
+    if (empty($args['posts_per_page']) || $args['posts_per_page'] < 20) {
+        $args['posts_per_page'] = 100;
+    }
+    return $args;
+}, 10, 2);
+
+// =============================================
+// 7. OTTIMIZZAZIONI
 // =============================================
 
 add_filter('upload_size_limit', function () { return 20 * 1024 * 1024; }); // 20MB
