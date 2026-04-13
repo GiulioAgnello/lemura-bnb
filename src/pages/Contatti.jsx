@@ -1,6 +1,6 @@
 import { useState } from "react";
 import useWP from "../hooks/useWP";
-import { getPageBySlug } from "../lib/wordpress";
+import { getPageBySlug, submitInquiry } from "../lib/wordpress";
 import Loader from "../components/Loader";
 
 const BOOKING_URL = import.meta.env.VITE_BOOKING_URL || "#";
@@ -20,6 +20,8 @@ export default function Contatti() {
   const { data: page, loading } = useWP(() => getPageBySlug("contatti"));
   const [form, setForm] = useState({ nome: "", email: "", telefono: "", checkin: "", checkout: "", ospiti: "2", messaggio: "" });
   const [sent, setSent] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState(null);
 
   if (loading) return <Loader />;
 
@@ -36,12 +38,18 @@ export default function Contatti() {
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // In produzione: invia a WordPress REST, Formspree, EmailJS, ecc.
-    console.log("Richiesta disponibilità:", form);
-    setSent(true);
-    setForm({ nome: "", email: "", telefono: "", checkin: "", checkout: "", ospiti: "2", messaggio: "" });
+  const handleSubmit = async () => {
+    setError(null);
+    setSending(true);
+    try {
+      await submitInquiry(form);
+      setSent(true);
+      setForm({ nome: "", email: "", telefono: "", checkin: "", checkout: "", ospiti: "2", messaggio: "" });
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSending(false);
+    }
   };
 
   const inputStyle = {
@@ -126,9 +134,14 @@ export default function Contatti() {
                       <label className="form-label" style={labelStyle}>Messaggio (opzionale)</label>
                       <textarea name="messaggio" value={form.messaggio} onChange={handleChange} rows="4" className="form-control" style={{ ...inputStyle, resize: "vertical" }} placeholder="Richieste particolari, preferenze camera..." />
                     </div>
+                    {error && (
+                      <div className="col-12">
+                        <p className="text-danger mb-0" style={{ fontSize: "0.9rem" }}>{error}</p>
+                      </div>
+                    )}
                     <div className="col-12 mt-2">
-                      <button type="button" onClick={handleSubmit} className="btn-bnb btn-bnb-accent w-100">
-                        Invia richiesta
+                      <button type="button" onClick={handleSubmit} disabled={sending} className="btn-bnb btn-bnb-accent w-100">
+                        {sending ? "Invio in corso…" : "Invia richiesta"}
                       </button>
                     </div>
                   </div>

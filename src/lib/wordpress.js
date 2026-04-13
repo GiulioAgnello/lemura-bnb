@@ -3,6 +3,7 @@
  */
 
 const API_URL = import.meta.env.VITE_WP_API_URL;
+const CRM_URL = import.meta.env.VITE_CRM_API_URL;
 
 async function fetchAPI(endpoint) {
   try {
@@ -114,6 +115,45 @@ export async function getRecensioni() {
     data_soggiorno: r.acf?.data_soggiorno || "",
     piattaforma: r.acf?.piattaforma || "",
   }));
+}
+
+// ── CRM: Disponibilità e Richieste ──
+
+/**
+ * Verifica la disponibilità delle camere per un periodo.
+ * GET /wp-json/lemura-crm/v1/availability
+ */
+export async function checkAvailability({ check_in, check_out, guests = 1 }) {
+  try {
+    const params = new URLSearchParams({ check_in, check_out, guests });
+    const res = await fetch(`${CRM_URL}/availability?${params}`);
+    if (!res.ok) {
+      console.error(`CRM API [${res.status}]: /availability`);
+      return null;
+    }
+    return await res.json();
+  } catch (err) {
+    console.error("CRM API Error:", err);
+    return null;
+  }
+}
+
+/**
+ * Invia una richiesta di disponibilità dal form contatti.
+ * POST /wp-json/lemura-crm/v1/inquiries
+ * Ritorna { success, message } oppure lancia un errore.
+ */
+export async function submitInquiry(formData) {
+  const res = await fetch(`${CRM_URL}/inquiries`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(formData),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data?.message || "Errore nell'invio della richiesta");
+  }
+  return data;
 }
 
 // ── Helper ──
