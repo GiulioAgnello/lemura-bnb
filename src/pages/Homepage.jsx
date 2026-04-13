@@ -8,7 +8,7 @@ export default function Homepage() {
       <section
         className="position-relative"
         style={{
-          background: `linear-gradient(to bottom, rgba(44,36,24,0.3), rgba(44,36,24,0.6)), url("./public/IMG_5289.JPEG") center/cover no-repeat`,
+          background: `linear-gradient(to bottom, rgba(44,36,24,0.3), rgba(44,36,24,0.6)), url("/IMG_5289.JPEG") center/cover no-repeat`,
           minHeight: "90vh",
           display: "flex",
           alignItems: "center",
@@ -62,7 +62,7 @@ export default function Homepage() {
           <div className="row align-items-center g-5">
             <div className="col-lg-6 fade-in">
               <img
-                src="./public/2.jpg"
+                src="/2.jpg"
                 alt="Le Mura degli Angeli"
                 className="img-bnb w-100"
                 style={{ aspectRatio: "4/5", objectFit: "cover" }}
