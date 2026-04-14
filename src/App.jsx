@@ -1,10 +1,18 @@
-import { BrowserRouter, Routes, Route, Outlet, useLocation } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Outlet,
+  useLocation,
+} from "react-router-dom";
 import { useEffect } from "react";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import Homepage from "./pages/Homepage";
-import Camere from "./pages/Camere";
+import Strutture from "./pages/Strutture";
+import StrutturaDetail from "./pages/StrutturaDetail";
 import CameraDetail from "./pages/CameraDetail";
+import Spa from "./pages/Spa";
 import Galleria from "./pages/Galleria";
 import Esperienze from "./pages/Esperienze";
 import Recensioni from "./pages/Recensioni";
@@ -12,7 +20,9 @@ import Contatti from "./pages/Contatti";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
-  useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
   return null;
 }
 
@@ -35,8 +45,10 @@ export default function App() {
       <Routes>
         <Route element={<Layout />}>
           <Route path="/" element={<Homepage />} />
-          <Route path="/camere" element={<Camere />} />
+          <Route path="/strutture" element={<Strutture />} />
+          <Route path="/strutture/:slug" element={<StrutturaDetail />} />
           <Route path="/camere/:slug" element={<CameraDetail />} />
+          <Route path="/spa" element={<Spa />} />
           <Route path="/galleria" element={<Galleria />} />
           <Route path="/esperienze" element={<Esperienze />} />
           <Route path="/recensioni" element={<Recensioni />} />

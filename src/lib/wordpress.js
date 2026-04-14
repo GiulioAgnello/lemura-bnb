@@ -26,7 +26,9 @@ async function fetchAPI(endpoint) {
 // ── Pagine ──
 
 export async function getPageBySlug(slug) {
-  const result = await fetchAPI(`/pages?slug=${slug}&_embed&acf_format=standard`);
+  const result = await fetchAPI(
+    `/pages?slug=${slug}&_embed&acf_format=standard`,
+  );
   if (!result?.data?.[0]) return null;
   const p = result.data[0];
   return {
@@ -41,7 +43,9 @@ export async function getPageBySlug(slug) {
 // ── Camere (Custom Post Type) ──
 
 export async function getCamere() {
-  const result = await fetchAPI(`/camera?_embed&acf_format=standard&per_page=20`);
+  const result = await fetchAPI(
+    `/camera?_embed&acf_format=standard&per_page=20`,
+  );
   if (!result) return [];
   return result.data.map((c) => ({
     id: c.id,
@@ -59,7 +63,9 @@ export async function getCamere() {
 }
 
 export async function getCameraBySlug(slug) {
-  const result = await fetchAPI(`/camera?slug=${slug}&_embed&acf_format=standard`);
+  const result = await fetchAPI(
+    `/camera?slug=${slug}&_embed&acf_format=standard`,
+  );
   if (!result?.data?.[0]) return null;
   const c = result.data[0];
   return {
@@ -87,7 +93,9 @@ export async function getGalleryImages() {
 // ── Esperienze (Custom Post Type) ──
 
 export async function getEsperienze() {
-  const result = await fetchAPI(`/esperienza?_embed&acf_format=standard&per_page=20`);
+  const result = await fetchAPI(
+    `/esperienza?_embed&acf_format=standard&per_page=20`,
+  );
   if (!result) return [];
   return result.data.map((e) => ({
     id: e.id,
@@ -133,7 +141,12 @@ export async function getSternatia() {
       console.error(`CRM API [${res.status}]: /sternatia`);
       return null;
     }
-    return await res.json();
+    const raw = await res.json();
+    return {
+      ...raw,
+      featured_image: extractImageUrl(raw.featured_image),
+      gallery: normalizeGallery(raw.gallery),
+    };
   } catch (err) {
     console.error("CRM API Error (sternatia):", err);
     return null;
@@ -156,7 +169,22 @@ export async function getCorigliano() {
       console.error(`CRM API [${res.status}]: /corigliano`);
       return null;
     }
-    return await res.json();
+    const raw = await res.json();
+    return {
+      ...raw,
+      rooms: (raw.rooms || []).map((r) => ({
+        ...r,
+        featured_image: extractImageUrl(r.featured_image),
+        gallery: normalizeGallery(r.gallery),
+      })),
+      spa: raw.spa
+        ? {
+            ...raw.spa,
+            featured_image: extractImageUrl(raw.spa.featured_image),
+            gallery: normalizeGallery(raw.spa.gallery),
+          }
+        : null,
+    };
   } catch (err) {
     console.error("CRM API Error (corigliano):", err);
     return null;
@@ -175,7 +203,26 @@ export async function getStrutture() {
       console.error(`CRM API [${res.status}]: /strutture`);
       return null;
     }
-    return await res.json();
+    const raw = await res.json();
+    return {
+      sternatia: raw.sternatia
+        ? {
+            ...raw.sternatia,
+            featured_image: extractImageUrl(raw.sternatia.featured_image),
+            gallery: normalizeGallery(raw.sternatia.gallery),
+          }
+        : null,
+      corigliano: raw.corigliano
+        ? {
+            ...raw.corigliano,
+            rooms: (raw.corigliano.rooms || []).map((r) => ({
+              ...r,
+              featured_image: extractImageUrl(r.featured_image),
+              gallery: normalizeGallery(r.gallery),
+            })),
+          }
+        : null,
+    };
   } catch (err) {
     console.error("CRM API Error (strutture):", err);
     return null;
@@ -222,6 +269,21 @@ export async function submitInquiry(formData) {
 }
 
 // ── Helper ──
+
+/** Normalizza featured_image CRM: accetta stringa URL o oggetto { url, alt } */
+function extractImageUrl(value) {
+  if (!value) return null;
+  if (typeof value === "string") return value;
+  return value.url || null;
+}
+
+/** Normalizza gallery CRM: array di stringhe o di oggetti { url, alt } → array di stringhe */
+function normalizeGallery(gallery) {
+  if (!Array.isArray(gallery)) return [];
+  return gallery
+    .map((item) => (typeof item === "string" ? item : item?.url))
+    .filter(Boolean);
+}
 
 function extractImage(item) {
   const media = item._embedded?.["wp:featuredmedia"]?.[0];

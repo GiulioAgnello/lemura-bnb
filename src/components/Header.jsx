@@ -4,7 +4,8 @@ const AIR_BNB = import.meta.env.VITE_AIRBNB_URL || "#";
 
 const navItems = [
   { label: "Home", to: "/" },
-  { label: "Camere", to: "/camere" },
+  { label: "Strutture", to: "/strutture" },
+  { label: "Spa", to: "/spa" },
   { label: "Galleria", to: "/galleria" },
   { label: "Esperienze", to: "/esperienze" },
   { label: "Recensioni", to: "/recensioni" },

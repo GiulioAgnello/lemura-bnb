@@ -1,7 +1,49 @@
 import { Link } from "react-router-dom";
+import useWP from "../hooks/useWP";
+import { getStrutture } from "../lib/wordpress";
+
+const PLACEHOLDER_STRUTTURE = [
+  {
+    slug: "corigliano",
+    nome: "Corigliano d'Otranto",
+    tipo: "Due Camere",
+    image:
+      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80",
+  },
+  {
+    slug: "sternatia",
+    nome: "Sternatia",
+    tipo: "Casa Intera",
+    image:
+      "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&q=80",
+  },
+];
+
+function normalizeStrutture(apiData) {
+  if (!apiData) return PLACEHOLDER_STRUTTURE;
+  return [
+    {
+      slug: "corigliano",
+      nome: "Corigliano d'Otranto",
+      tipo: "Due Camere",
+      image:
+        apiData.corigliano?.rooms?.[0]?.featured_image ||
+        PLACEHOLDER_STRUTTURE[0].image,
+    },
+    {
+      slug: "sternatia",
+      nome: apiData.sternatia?.title || "Sternatia",
+      tipo: "Casa Intera",
+      image:
+        apiData.sternatia?.featured_image || PLACEHOLDER_STRUTTURE[1].image,
+    },
+  ];
+}
 
 export default function Homepage() {
   const AIRBNB_URL = import.meta.env.VITE_AIRBNB_URL || "#";
+  const { data: apiData } = useWP(() => getStrutture());
+  const strutture = normalizeStrutture(apiData);
   return (
     <>
       {/* ═══════ HERO ═══════ */}
@@ -47,8 +89,8 @@ export default function Homepage() {
                 >
                   Prenota il soggiorno
                 </a>
-                <Link to="/camere" className="btn-bnb btn-bnb-white">
-                  Scopri le camere
+                <Link to="/strutture" className="btn-bnb btn-bnb-white">
+                  Scopri le strutture
                 </Link>
               </div>
             </div>
@@ -87,43 +129,58 @@ export default function Homepage() {
         </div>
       </section>
 
-      {/* ═══════ SERVIZI ═══════ */}
+      {/* ═══════ STRUTTURE ═══════ */}
       <section
         className="section-padding"
         style={{ background: "var(--color-bg-warm)" }}
       >
         <div className="container">
           <div className="text-center mb-5 fade-in">
-            <span className="section-label">I nostri servizi</span>
-            <h2 className="section-title">Tutto per il vostro comfort</h2>
+            <span className="section-label">Le nostre strutture</span>
+            <h2 className="section-title">Sternatia e Corigliano D'otranto</h2>
             <hr className="section-divider section-divider-center" />
           </div>
-          <div className="row justify-content-center g-3">servizi</div>
-        </div>
-      </section>
-
-      {/* ═══════ CAMERE PREVIEW ═══════ */}
-      <section className="section-padding">
-        <div className="container">
-          <div className="text-center mb-5 fade-in">
-            <span className="section-label">Le nostre camere</span>
-            <h2 className="section-title">Comfort e tradizione</h2>
-            <hr className="section-divider section-divider-center" />
-          </div>
-          <div className="row g-4">camere</div>
-          <div className="text-center mt-5">
-            <Link to="/camere" className="btn-bnb">
-              Tutte le camere
-            </Link>
+          <div className="row g-4">
+            {strutture.map((s) => (
+              <div className="col-12 col-md-6" key={s.slug}>
+                <Link
+                  to={`/strutture/${s.slug}`}
+                  className="text-decoration-none"
+                >
+                  <div className="fade-in" style={{ overflow: "hidden" }}>
+                    <img
+                      src={s.image}
+                      alt={s.nome}
+                      className="img-bnb w-100"
+                      style={{ aspectRatio: "4/3", objectFit: "cover" }}
+                    />
+                    <div style={{ paddingTop: "1rem", textAlign: "center" }}>
+                      <small
+                        className="section-label"
+                        style={{ display: "block", marginBottom: "0.3rem" }}
+                      >
+                        {s.tipo}
+                      </small>
+                      <h4
+                        style={{
+                          fontFamily: "var(--font-display)",
+                          fontSize: "1.35rem",
+                          color: "var(--color-text)",
+                        }}
+                      >
+                        {s.nome}
+                      </h4>
+                    </div>
+                  </div>
+                </Link>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* ═══════ RECENSIONI PREVIEW ═══════ */}
-      <section
-        className="section-padding"
-        style={{ background: "var(--color-bg-warm)" }}
-      >
+      <section className="section-padding">
         <div className="container">
           <div className="text-center mb-5 fade-in">
             <span className="section-label">Testimonianze</span>
