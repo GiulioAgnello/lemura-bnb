@@ -117,6 +117,71 @@ export async function getRecensioni() {
   }));
 }
 
+// ── Strutture: Sternatia e Corigliano ──
+
+/**
+ * Dati della casa intera di Sternatia.
+ * GET /wp-json/lemura-crm/v1/sternatia
+ * Ritorna: { id, title, description, prezzo_notte, superficie,
+ *            servizi, checkin_time, checkout_time,
+ *            featured_image, gallery }
+ */
+export async function getSternatia() {
+  try {
+    const res = await fetch(`${CRM_URL}/sternatia`);
+    if (!res.ok) {
+      console.error(`CRM API [${res.status}]: /sternatia`);
+      return null;
+    }
+    return await res.json();
+  } catch (err) {
+    console.error("CRM API Error (sternatia):", err);
+    return null;
+  }
+}
+
+/**
+ * Dati del B&B Corigliano: camere + spa.
+ * GET /wp-json/lemura-crm/v1/corigliano
+ * Ritorna: {
+ *   rooms: [{ id, title, prezzo_notte, superficie, servizi,
+ *              checkin_time, checkout_time, featured_image, gallery }, ...],
+ *   spa:   { id, title, servizi, featured_image, gallery } | null
+ * }
+ */
+export async function getCorigliano() {
+  try {
+    const res = await fetch(`${CRM_URL}/corigliano`);
+    if (!res.ok) {
+      console.error(`CRM API [${res.status}]: /corigliano`);
+      return null;
+    }
+    return await res.json();
+  } catch (err) {
+    console.error("CRM API Error (corigliano):", err);
+    return null;
+  }
+}
+
+/**
+ * Entrambe le strutture in un unico fetch.
+ * GET /wp-json/lemura-crm/v1/strutture
+ * Ritorna: { sternatia: {...}, corigliano: { rooms: [...], spa: {...} } }
+ */
+export async function getStrutture() {
+  try {
+    const res = await fetch(`${CRM_URL}/strutture`);
+    if (!res.ok) {
+      console.error(`CRM API [${res.status}]: /strutture`);
+      return null;
+    }
+    return await res.json();
+  } catch (err) {
+    console.error("CRM API Error (strutture):", err);
+    return null;
+  }
+}
+
 // ── CRM: Disponibilità e Richieste ──
 
 /**
