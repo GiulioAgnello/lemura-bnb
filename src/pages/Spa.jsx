@@ -1,59 +1,64 @@
-import { Link } from "react-router-dom";
-import useWP from "../hooks/useWP";
-import { getCorigliano } from "../lib/wordpress";
-import Loader from "../components/Loader";
+// import { Link } from "react-router-dom";
+// import useWP from "../hooks/useWP";
+// import { getCorigliano } from "../lib/wordpress";
+// import Loader from "../components/Loader";
 
-const TRATTAMENTI = [
-  {
-    nome: "Massaggio Rigenerante",
-    durata: "60 min",
-    prezzo: "70",
-    descrizione:
-      "Massaggio corpo completo con oli essenziali di lavanda e arancio amaro del Salento. Scioglie le tensioni muscolari e riequilibra corpo e mente.",
-  },
-  {
-    nome: "Percorso Hammam",
-    durata: "90 min",
-    prezzo: "95",
-    descrizione:
-      "Bagno turco, scrub al fango del mar Adriatico e impacco all'argilla verde. Un rito di purificazione profonda ispirato alla tradizione mediterranea.",
-  },
-  {
-    nome: "Trattamento Viso Rigenerante",
-    durata: "50 min",
-    prezzo: "65",
-    descrizione:
-      "Pulizia profonda, maschera all'olio di melograno e siero all'acqua termale. La pelle ritrova luminosità e idratazione duratura.",
-  },
-  {
-    nome: "Percorso Coppia",
-    durata: "120 min",
-    prezzo: "160",
-    descrizione:
-      "Massaggio in coppia, accesso alla vasca idromassaggio privata e calice di prosecco. Il regalo perfetto per celebrare un momento speciale.",
-  },
-];
+// const TRATTAMENTI = [
+//   {
+//     nome: "Massaggio Rigenerante",
+//     durata: "60 min",
+//     prezzo: "70",
+//     descrizione:
+//       "Massaggio corpo completo con oli essenziali di lavanda e arancio amaro del Salento. Scioglie le tensioni muscolari e riequilibra corpo e mente.",
+//   },
+//   {
+//     nome: "Percorso Hammam",
+//     durata: "90 min",
+//     prezzo: "95",
+//     descrizione:
+//       "Bagno turco, scrub al fango del mar Adriatico e impacco all'argilla verde. Un rito di purificazione profonda ispirato alla tradizione mediterranea.",
+//   },
+//   {
+//     nome: "Trattamento Viso Rigenerante",
+//     durata: "50 min",
+//     prezzo: "65",
+//     descrizione:
+//       "Pulizia profonda, maschera all'olio di melograno e siero all'acqua termale. La pelle ritrova luminosità e idratazione duratura.",
+//   },
+//   {
+//     nome: "Percorso Coppia",
+//     durata: "120 min",
+//     prezzo: "160",
+//     descrizione:
+//       "Massaggio in coppia, accesso alla vasca idromassaggio privata e calice di prosecco. Il regalo perfetto per celebrare un momento speciale.",
+//   },
+// ];
 
-const FALLBACK_HERO =
-  "https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=1400&q=80";
+// const FALLBACK_HERO =
+//   "https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=1400&q=80";
 
 export default function Spa() {
-  const { data: coriglianoData, loading } = useWP(() => getCorigliano());
+  // const { data: coriglianoData, loading } = useWP(() => getCorigliano());
 
-  if (loading) return <Loader />;
+  // if (loading) return <Loader />;
 
-  const spa = coriglianoData?.spa || null;
-  const heroImage = spa?.featured_image || FALLBACK_HERO;
-  const spaGallery = Array.isArray(spa?.gallery) ? spa.gallery : [];
+  // const spa = coriglianoData?.spa || null;
+  // const heroImage = spa?.featured_image || FALLBACK_HERO;
+  // const spaGallery = Array.isArray(spa?.gallery) ? spa.gallery : [];
 
-  // Se l'API restituisce una lista di servizi come stringa CSV, la usiamo
-  const serviziApi = spa?.servizi
-    ? spa.servizi.split(",").map((s) => s.trim()).filter(Boolean)
-    : null;
+  // // Se l'API restituisce una lista di servizi come stringa CSV, la usiamo
+  // const serviziApi = spa?.servizi
+  //   ? spa.servizi.split(",").map((s) => s.trim()).filter(Boolean)
+  //   : null;
 
   return (
     <>
-      {/* Hero */}
+      <div>
+        <div className="container">
+          <h1 className="text-center py-5">CoomingSoon</h1>
+        </div>
+      </div>
+      {/* Hero
       <div style={{ position: "relative", height: "460px", overflow: "hidden" }}>
         <img
           src={heroImage}
@@ -108,7 +113,7 @@ export default function Spa() {
       </div>
 
       {/* Intro */}
-      <section className="section-padding pb-0">
+      {/* <section className="section-padding pb-0">
         <div className="container text-center fade-in">
           <span className="section-label">Il nostro benessere</span>
           <h2 className="section-title">Un momento solo per te</h2>
@@ -120,10 +125,10 @@ export default function Spa() {
             e mani esperte per restituirti equilibrio profondo.
           </p>
         </div>
-      </section>
+      </section> */}
 
       {/* Gallery dalla API (se presente) */}
-      {spaGallery.length > 0 && (
+      {/* {spaGallery.length > 0 && (
         <section className="section-padding pb-0">
           <div className="container">
             <div className="row g-2">
@@ -143,10 +148,10 @@ export default function Spa() {
             </div>
           </div>
         </section>
-      )}
+      )} */}
 
       {/* Servizi dall'API (se presenti) */}
-      {serviziApi && serviziApi.length > 0 && (
+      {/* {serviziApi && serviziApi.length > 0 && (
         <section className="section-padding pb-0">
           <div className="container">
             <h3
@@ -176,10 +181,10 @@ export default function Spa() {
             </div>
           </div>
         </section>
-      )}
+      )} */}
 
       {/* Trattamenti */}
-      <section className="section-padding">
+      {/* <section className="section-padding">
         <div className="container">
           <h2
             style={{
@@ -233,11 +238,11 @@ export default function Spa() {
                   </p>
                 </div>
               </div>
-            ))}
-          </div>
+            ))} */}
+      {/* </div> */}
 
-          {/* CTA */}
-          <div
+      {/* CTA */}
+      {/* <div
             className="text-center mt-5 pt-4 fade-in"
             style={{ borderTop: "1px solid var(--color-border)" }}
           >
@@ -276,8 +281,8 @@ export default function Spa() {
               </Link>
             </div>
           </div>
-        </div>
-      </section>
+        </div> */}
+      {/* </section> } */}
     </>
   );
 }
