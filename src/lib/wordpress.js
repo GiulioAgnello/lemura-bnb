@@ -250,6 +250,50 @@ export async function checkAvailability({ check_in, check_out, guests = 1 }) {
   }
 }
 
+// ── Booking engine ──
+
+/**
+ * Restituisce le date bloccate per una specifica unità.
+ *
+ * Unità valide: "sternatia" | "corigliano-camera-1" | "corigliano-camera-2"
+ *
+ * GET /wp-json/lemura-crm/v1/availability?unit={unit}
+ * Ritorna: { unit: string, blocked: [{ start: "YYYY-MM-DD", end: "YYYY-MM-DD" }] }
+ */
+export async function getAvailability(unit) {
+  try {
+    const res = await fetch(`${CRM_URL}/availability?unit=${encodeURIComponent(unit)}`);
+    if (!res.ok) {
+      console.error(`CRM API [${res.status}]: /availability`);
+      return { unit, blocked: [] };
+    }
+    return await res.json();
+  } catch (err) {
+    console.error("CRM API Error (availability):", err);
+    return { unit, blocked: [] };
+  }
+}
+
+/**
+ * Invia una richiesta di prenotazione.
+ *
+ * POST /wp-json/lemura-crm/v1/bookings
+ * Payload: { unit, checkin, checkout, nome, email, telefono, ospiti, messaggio }
+ * Ritorna: { success, id, message } oppure lancia un errore.
+ */
+export async function submitBooking(formData) {
+  const res = await fetch(`${CRM_URL}/bookings`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(formData),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data?.message || "Errore nell'invio della richiesta.");
+  }
+  return data;
+}
+
 /**
  * Invia una richiesta di disponibilità dal form contatti.
  * POST /wp-json/lemura-crm/v1/inquiries

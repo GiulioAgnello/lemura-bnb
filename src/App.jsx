@@ -8,6 +8,7 @@ import {
 import { useEffect } from "react";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
+import BookingFAB from "./components/BookingFAB";
 import Homepage from "./pages/Homepage";
 import Strutture from "./pages/Strutture";
 import StrutturaDetail from "./pages/StrutturaDetail";
@@ -35,6 +36,7 @@ function Layout() {
         <Outlet />
       </main>
       <Footer />
+      <BookingFAB />
     </div>
   );
 }

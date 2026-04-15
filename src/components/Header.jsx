@@ -1,7 +1,5 @@
 import { Link, NavLink } from "react-router-dom";
 
-const AIR_BNB = import.meta.env.VITE_AIRBNB_URL || "#";
-
 const navItems = [
   { label: "Home", to: "/" },
   { label: "Strutture", to: "/strutture" },
@@ -47,17 +45,6 @@ export default function Header() {
                 </NavLink>
               </li>
             ))}
-            <li className="nav-item ms-lg-3">
-              <a
-                href={AIR_BNB}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn-bnb-accent btn-bnb"
-                style={{ padding: "0.55rem 1.4rem", fontSize: "0.78rem" }}
-              >
-                Prenota ora
-              </a>
-            </li>
           </ul>
         </div>
       </div>

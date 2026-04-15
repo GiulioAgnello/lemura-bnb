@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import useWP from "../hooks/useWP";
 import { getStrutture } from "../lib/wordpress";
+import BookingWidget from "../components/BookingWidget";
 
 const PLACEHOLDER_STRUTTURE = [
   {
@@ -97,6 +98,11 @@ export default function Homepage() {
           </div>
         </div>
       </section>
+      {/* <section>
+        <div className="containerBooking">
+          <BookingWidget />
+        </div>
+      </section> */}
 
       {/* ═══════ INTRO ═══════ */}
       <section className="section-padding">

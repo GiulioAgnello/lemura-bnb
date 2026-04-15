@@ -329,7 +329,1167 @@ add_action( 'rest_api_init', function () {
 } );
 
 // ============================================================
-// 7. OTTIMIZZAZIONI
+// 7. CPT: richiesta_info (richieste dal form contatti)
+// ============================================================
+add_action( 'init', function () {
+    register_post_type( 'richiesta_info', array(
+        'labels' => array(
+            'name'          => 'Richieste Info',
+            'singular_name' => 'Richiesta Info',
+            'add_new'       => 'Nuova richiesta',
+            'all_items'     => 'Tutte le richieste',
+            'edit_item'     => 'Dettaglio richiesta',
+        ),
+        'public'       => false,
+        'show_ui'      => true,
+        'show_in_menu' => true,
+        'show_in_rest' => false,
+        'supports'     => array( 'title', 'editor', 'custom-fields' ),
+        'menu_icon'    => 'dashicons-email-alt',
+        'capability_type' => 'post',
+    ) );
+} );
+
+// Campi ACF per richiesta_info
+add_action( 'acf/init', function () {
+    if ( ! function_exists( 'acf_add_local_field_group' ) ) return;
+
+    acf_add_local_field_group( array(
+        'key'    => 'group_richiesta_info_v1',
+        'title'  => 'Dati Richiesta',
+        'fields' => array(
+            array( 'key' => 'field_ri_nome',     'label' => 'Nome',     'name' => 'ri_nome',     'type' => 'text' ),
+            array( 'key' => 'field_ri_email',    'label' => 'Email',    'name' => 'ri_email',    'type' => 'email' ),
+            array( 'key' => 'field_ri_telefono', 'label' => 'Telefono', 'name' => 'ri_telefono', 'type' => 'text' ),
+            array( 'key' => 'field_ri_checkin',  'label' => 'Check-in', 'name' => 'ri_checkin',  'type' => 'text' ),
+            array( 'key' => 'field_ri_checkout', 'label' => 'Check-out','name' => 'ri_checkout', 'type' => 'text' ),
+            array( 'key' => 'field_ri_ospiti',   'label' => 'Ospiti',   'name' => 'ri_ospiti',   'type' => 'text' ),
+            array( 'key' => 'field_ri_messaggio','label' => 'Messaggio','name' => 'ri_messaggio','type' => 'textarea' ),
+        ),
+        'location' => array( array( array(
+            'param'    => 'post_type',
+            'operator' => '==',
+            'value'    => 'richiesta_info',
+        ) ) ),
+        'menu_order' => 0,
+    ) );
+} );
+
+// ============================================================
+// 8. ENDPOINT: POST /wp-json/lemura-crm/v1/inquiries
+// ============================================================
+add_action( 'rest_api_init', function () {
+
+    register_rest_route( 'lemura-crm/v1', '/inquiries', array(
+        'methods'             => WP_REST_Server::CREATABLE,
+        'permission_callback' => '__return_true',
+        'callback'            => function ( WP_REST_Request $request ) {
+
+            $params = $request->get_json_params();
+            if ( empty( $params ) ) {
+                $params = $request->get_body_params();
+            }
+
+            // --- Validazione campi obbligatori ---
+            $nome  = sanitize_text_field( $params['nome']  ?? '' );
+            $email = sanitize_email( $params['email'] ?? '' );
+
+            if ( ! $nome || ! $email ) {
+                return new WP_Error(
+                    'missing_fields',
+                    'Nome ed email sono obbligatori.',
+                    array( 'status' => 422 )
+                );
+            }
+            if ( ! is_email( $email ) ) {
+                return new WP_Error(
+                    'invalid_email',
+                    'Indirizzo email non valido.',
+                    array( 'status' => 422 )
+                );
+            }
+
+            // --- Sanitizzazione ---
+            $telefono = sanitize_text_field( $params['telefono'] ?? '' );
+            $checkin  = sanitize_text_field( $params['checkin']  ?? '' );
+            $checkout = sanitize_text_field( $params['checkout'] ?? '' );
+            $ospiti   = sanitize_text_field( $params['ospiti']   ?? '1' );
+            $messaggio= sanitize_textarea_field( $params['messaggio'] ?? '' );
+
+            // --- Salvataggio come CPT ---
+            $titolo = sprintf(
+                'Richiesta da %s — %s',
+                $nome,
+                current_time( 'd/m/Y H:i' )
+            );
+
+            $post_id = wp_insert_post( array(
+                'post_type'   => 'richiesta_info',
+                'post_status' => 'publish',
+                'post_title'  => $titolo,
+                'post_content'=> $messaggio,
+            ) );
+
+            if ( is_wp_error( $post_id ) ) {
+                return new WP_Error(
+                    'save_failed',
+                    'Errore nel salvataggio della richiesta.',
+                    array( 'status' => 500 )
+                );
+            }
+
+            // Salva i campi come post_meta (funziona anche senza ACF)
+            $meta = array(
+                'ri_nome'     => $nome,
+                'ri_email'    => $email,
+                'ri_telefono' => $telefono,
+                'ri_checkin'  => $checkin,
+                'ri_checkout' => $checkout,
+                'ri_ospiti'   => $ospiti,
+                'ri_messaggio'=> $messaggio,
+            );
+            foreach ( $meta as $key => $val ) {
+                update_post_meta( $post_id, $key, $val );
+            }
+            // Se ACF è attivo aggiorna anche i suoi campi
+            if ( function_exists( 'update_field' ) ) {
+                foreach ( $meta as $key => $val ) {
+                    update_field( $key, $val, $post_id );
+                }
+            }
+
+            // --- Email di notifica al proprietario ---
+            $admin_email = get_option( 'admin_email' );
+            $subject = sprintf( '[Le Mura degli Angeli] Nuova richiesta da %s', $nome );
+            $body  = "Hai ricevuto una nuova richiesta dal sito.\n\n";
+            $body .= "Nome:      $nome\n";
+            $body .= "Email:     $email\n";
+            $body .= "Telefono:  $telefono\n";
+            $body .= "Check-in:  $checkin\n";
+            $body .= "Check-out: $checkout\n";
+            $body .= "Ospiti:    $ospiti\n";
+            if ( $messaggio ) {
+                $body .= "Messaggio:\n$messaggio\n";
+            }
+            $body .= "\nVisualizza nel pannello admin:\n";
+            $body .= admin_url( "post.php?post={$post_id}&action=edit" );
+
+            wp_mail(
+                $admin_email,
+                $subject,
+                $body,
+                array( "Reply-To: $nome <$email>" )
+            );
+
+            return rest_ensure_response( array(
+                'success' => true,
+                'message' => 'Richiesta ricevuta. Ti risponderemo entro 24 ore.',
+                'id'      => $post_id,
+            ) );
+        },
+    ) );
+
+} );
+
+// ============================================================
+// 9. CPT: prenotazione (booking engine)
+// ============================================================
+add_action( 'init', function () {
+    register_post_type( 'prenotazione', array(
+        'labels' => array(
+            'name'          => 'Prenotazioni',
+            'singular_name' => 'Prenotazione',
+            'add_new'       => 'Nuova prenotazione',
+            'all_items'     => 'Tutte le prenotazioni',
+            'edit_item'     => 'Dettaglio prenotazione',
+        ),
+        'public'          => false,
+        'show_ui'         => true,
+        'show_in_menu'    => true,
+        'show_in_rest'    => false,
+        'supports'        => array( 'title', 'custom-fields' ),
+        'menu_icon'       => 'dashicons-calendar-alt',
+        'capability_type' => 'post',
+    ) );
+} );
+
+add_action( 'acf/init', function () {
+    if ( ! function_exists( 'acf_add_local_field_group' ) ) return;
+
+    acf_add_local_field_group( array(
+        'key'    => 'group_prenotazione_v1',
+        'title'  => 'Dettagli Prenotazione',
+        'fields' => array(
+            array(
+                'key'      => 'field_pren_unit',
+                'label'    => 'Unità',
+                'name'     => 'pren_unit',
+                'type'     => 'select',
+                'required' => 1,
+                'choices'  => array(
+                    'sternatia'            => 'Sternatia — Casa intera',
+                    'corigliano-camera-1'  => 'Corigliano — Camera 1',
+                    'corigliano-camera-2'  => 'Corigliano — Camera 2',
+                ),
+            ),
+            array(
+                'key'            => 'field_pren_checkin',
+                'label'          => 'Check-in',
+                'name'           => 'pren_checkin',
+                'type'           => 'date_picker',
+                'display_format' => 'd/m/Y',
+                'return_format'  => 'Y-m-d',
+                'required'       => 1,
+            ),
+            array(
+                'key'            => 'field_pren_checkout',
+                'label'          => 'Check-out',
+                'name'           => 'pren_checkout',
+                'type'           => 'date_picker',
+                'display_format' => 'd/m/Y',
+                'return_format'  => 'Y-m-d',
+                'required'       => 1,
+            ),
+            array( 'key' => 'field_pren_guest_name',  'label' => 'Nome ospite',  'name' => 'pren_guest_name',  'type' => 'text' ),
+            array( 'key' => 'field_pren_guest_email', 'label' => 'Email ospite', 'name' => 'pren_guest_email', 'type' => 'email' ),
+            array( 'key' => 'field_pren_guest_phone', 'label' => 'Telefono',     'name' => 'pren_guest_phone', 'type' => 'text' ),
+            array( 'key' => 'field_pren_guests',      'label' => 'N. ospiti',    'name' => 'pren_guests',      'type' => 'number' ),
+            array( 'key' => 'field_pren_message',     'label' => 'Messaggio',    'name' => 'pren_message',     'type' => 'textarea' ),
+            array(
+                'key'     => 'field_pren_status',
+                'label'   => 'Stato',
+                'name'    => 'pren_status',
+                'type'    => 'select',
+                'choices' => array(
+                    'pending'   => '🕐 In attesa',
+                    'confirmed' => '✅ Confermata',
+                    'rejected'  => '❌ Rifiutata',
+                    'cancelled' => '🚫 Annullata',
+                ),
+                'default_value' => 'pending',
+            ),
+            array(
+                'key'     => 'field_pren_source',
+                'label'   => 'Fonte',
+                'name'    => 'pren_source',
+                'type'    => 'select',
+                'choices' => array(
+                    'website' => 'Sito web',
+                    'airbnb'  => 'Airbnb',
+                    'booking' => 'Booking.com',
+                    'manual'  => 'Manuale',
+                ),
+                'default_value' => 'website',
+            ),
+            array(
+                'key'          => 'field_pren_external_uid',
+                'label'        => 'UID iCal esterno',
+                'name'         => 'pren_external_uid',
+                'type'         => 'text',
+                'instructions' => 'Compilato automaticamente durante l\'importazione iCal. Non modificare.',
+                'read_only'    => 1,
+            ),
+        ),
+        'location' => array( array( array(
+            'param'    => 'post_type',
+            'operator' => '==',
+            'value'    => 'prenotazione',
+        ) ) ),
+        'menu_order' => 0,
+    ) );
+} );
+
+// ============================================================
+// 10. ADMIN — Pagina impostazioni feed iCal
+// ============================================================
+add_action( 'admin_menu', function () {
+    add_submenu_page(
+        'edit.php?post_type=prenotazione',
+        'Sincronizzazione Calendari',
+        '🔄 Sync Calendari',
+        'manage_options',
+        'lemura-ical-settings',
+        'lemura_ical_settings_page'
+    );
+} );
+
+function lemura_ical_settings_page() {
+    $units = array(
+        'sternatia'           => 'Sternatia — Casa intera',
+        'corigliano-camera-1' => 'Corigliano — Camera 1',
+        'corigliano-camera-2' => 'Corigliano — Camera 2',
+    );
+    $sources = array( 'airbnb' => 'Airbnb', 'booking' => 'Booking.com' );
+
+    if ( isset( $_POST['lemura_ical_save'] ) ) {
+        check_admin_referer( 'lemura_ical_settings' );
+        foreach ( $units as $unit_key => $_ ) {
+            foreach ( $sources as $src_key => $_ ) {
+                $opt = "lemura_ical_{$unit_key}_{$src_key}";
+                $val = esc_url_raw( $_POST[ $opt ] ?? '' );
+                if ( $val ) update_option( $opt, $val );
+                else        delete_option( $opt );
+            }
+        }
+        // Avvia sincronizzazione immediata
+        lemura_do_ical_sync();
+        echo '<div class="notice notice-success is-dismissible"><p>✅ Impostazioni salvate e sincronizzazione avviata.</p></div>';
+    }
+
+    $site_url = get_site_url();
+    ?>
+    <div class="wrap">
+    <h1>Sincronizzazione Calendari — Le Mura degli Angeli</h1>
+
+    <h2>📤 Feed da esportare verso Airbnb / Booking.com</h2>
+    <p>Copia questi URL e aggiungili come "calendario da importare" su ciascuna piattaforma.</p>
+    <table class="widefat striped" style="max-width:800px">
+        <thead><tr><th>Unità</th><th>URL feed iCal</th></tr></thead>
+        <tbody>
+        <?php foreach ( $units as $unit_key => $unit_label ) : ?>
+        <tr>
+            <td><strong><?= esc_html( $unit_label ) ?></strong></td>
+            <td>
+                <code style="user-select:all;font-size:0.85em">
+                    <?= esc_html( $site_url ) ?>/wp-json/lemura-crm/v1/calendar/<?= esc_attr( $unit_key ) ?>.ics
+                </code>
+            </td>
+        </tr>
+        <?php endforeach; ?>
+        </tbody>
+    </table>
+
+    <h2 style="margin-top:2em">📥 Feed da importare (Airbnb / Booking.com → WordPress)</h2>
+    <p>Incolla qui i feed iCal di ogni piattaforma. WordPress li importerà ogni ora.</p>
+    <form method="post">
+    <?php wp_nonce_field( 'lemura_ical_settings' ); ?>
+    <table class="widefat striped" style="max-width:800px">
+        <thead>
+            <tr>
+                <th>Unità</th>
+                <?php foreach ( $sources as $src_label ) : ?>
+                    <th><?= esc_html( $src_label ) ?></th>
+                <?php endforeach; ?>
+            </tr>
+        </thead>
+        <tbody>
+        <?php foreach ( $units as $unit_key => $unit_label ) : ?>
+        <tr>
+            <td><strong><?= esc_html( $unit_label ) ?></strong></td>
+            <?php foreach ( $sources as $src_key => $src_label ) : ?>
+            <td>
+                <input type="url"
+                       name="lemura_ical_<?= esc_attr( $unit_key ) ?>_<?= esc_attr( $src_key ) ?>"
+                       value="<?= esc_attr( get_option( "lemura_ical_{$unit_key}_{$src_key}" ) ) ?>"
+                       style="width:100%"
+                       placeholder="https://www.<?= esc_attr( $src_key ) ?>.com/...ics" />
+            </td>
+            <?php endforeach; ?>
+        </tr>
+        <?php endforeach; ?>
+        </tbody>
+    </table>
+    <p style="margin-top:1em">
+        <input type="submit" name="lemura_ical_save" class="button button-primary" value="💾 Salva e sincronizza ora" />
+    </p>
+    </form>
+
+    <h2 style="margin-top:2em">ℹ️ Prossima sincronizzazione automatica</h2>
+    <?php
+    $next = wp_next_scheduled( 'lemura_sync_ical' );
+    if ( $next ) {
+        echo '<p>Prossima esecuzione: <strong>' . date_i18n( 'd/m/Y H:i', $next ) . '</strong></p>';
+    } else {
+        echo '<p>⚠️ Cron non programmato. <a href="' . esc_url( add_query_arg( 'lemura_reschedule', '1' ) ) . '">Clicca per riprogrammare</a>.</p>';
+    }
+    if ( isset( $_GET['lemura_reschedule'] ) ) {
+        wp_schedule_event( time(), 'hourly', 'lemura_sync_ical' );
+        echo '<p>✅ Cron riprogrammato.</p>';
+    }
+    ?>
+    </div>
+    <?php
+}
+
+// ============================================================
+// 11. WP CRON — sincronizzazione iCal ogni ora
+// ============================================================
+register_activation_hook( __FILE__, function () {
+    if ( ! wp_next_scheduled( 'lemura_sync_ical' ) ) {
+        wp_schedule_event( time(), 'hourly', 'lemura_sync_ical' );
+    }
+} );
+
+register_deactivation_hook( __FILE__, function () {
+    wp_clear_scheduled_hook( 'lemura_sync_ical' );
+} );
+
+add_action( 'lemura_sync_ical', 'lemura_do_ical_sync' );
+
+function lemura_do_ical_sync() {
+    $units   = array( 'sternatia', 'corigliano-camera-1', 'corigliano-camera-2' );
+    $sources = array( 'airbnb', 'booking' );
+
+    foreach ( $units as $unit ) {
+        foreach ( $sources as $source ) {
+            $url = get_option( "lemura_ical_{$unit}_{$source}" );
+            if ( $url ) {
+                lemura_import_ical_feed( $url, $unit, $source );
+            }
+        }
+    }
+}
+
+// ============================================================
+// 12. PARSER iCal — importa eventi da un feed .ics
+// ============================================================
+function lemura_import_ical_feed( $url, $unit, $source ) {
+    $response = wp_remote_get( $url, array(
+        'timeout'    => 30,
+        'user-agent' => 'LeMuraBot/1.0',
+    ) );
+    if ( is_wp_error( $response ) ) return;
+
+    $body = wp_remote_retrieve_body( $response );
+    if ( ! $body ) return;
+
+    $events = lemura_parse_ical( $body );
+
+    foreach ( $events as $event ) {
+        if ( empty( $event['dtstart'] ) || empty( $event['dtend'] ) || empty( $event['uid'] ) ) continue;
+
+        // Skip eventi nel passato
+        if ( strtotime( $event['dtend'] ) < strtotime( 'today' ) ) continue;
+
+        // Controlla se esiste già (per UID + unità)
+        $existing = get_posts( array(
+            'post_type'   => 'prenotazione',
+            'post_status' => 'publish',
+            'numberposts' => 1,
+            'meta_query'  => array(
+                array( 'key' => 'pren_external_uid', 'value' => $event['uid'] ),
+                array( 'key' => 'pren_unit',         'value' => $unit ),
+            ),
+        ) );
+
+        if ( ! empty( $existing ) ) {
+            // Aggiorna le date se cambiate
+            $pid = $existing[0]->ID;
+            update_post_meta( $pid, 'pren_checkin',  $event['dtstart'] );
+            update_post_meta( $pid, 'pren_checkout', $event['dtend'] );
+            continue;
+        }
+
+        // Crea nuova prenotazione importata
+        $summary = ! empty( $event['summary'] ) ? sanitize_text_field( $event['summary'] ) : 'Prenotazione';
+        $post_id = wp_insert_post( array(
+            'post_type'   => 'prenotazione',
+            'post_status' => 'publish',
+            'post_title'  => ucfirst( $source ) . ' — ' . $unit . ' — ' . $event['dtstart'],
+        ) );
+        if ( is_wp_error( $post_id ) ) continue;
+
+        $meta = array(
+            'pren_unit'         => $unit,
+            'pren_checkin'      => $event['dtstart'],
+            'pren_checkout'     => $event['dtend'],
+            'pren_status'       => 'confirmed',
+            'pren_source'       => $source,
+            'pren_external_uid' => $event['uid'],
+            'pren_guest_name'   => $summary,
+        );
+        foreach ( $meta as $k => $v ) {
+            update_post_meta( $post_id, $k, $v );
+        }
+    }
+}
+
+function lemura_parse_ical( $ical_string ) {
+    $events = array();
+
+    // Normalizza line endings e ricompone le righe piegate (iCal spec: continuation = spazio/tab iniziale)
+    $ical_string = str_replace( "\r\n", "\n", $ical_string );
+    $ical_string = str_replace( "\r",   "\n", $ical_string );
+    $ical_string = preg_replace( '/\n[ \t]/', '', $ical_string ); // unfold
+
+    $lines     = explode( "\n", $ical_string );
+    $in_event  = false;
+    $current   = array();
+
+    foreach ( $lines as $line ) {
+        $line = trim( $line );
+        if ( $line === '' ) continue;
+
+        if ( $line === 'BEGIN:VEVENT' ) {
+            $in_event = true;
+            $current  = array();
+            continue;
+        }
+        if ( $line === 'END:VEVENT' ) {
+            $in_event = false;
+            if ( ! empty( $current ) ) $events[] = $current;
+            continue;
+        }
+        if ( ! $in_event ) continue;
+        if ( strpos( $line, ':' ) === false ) continue;
+
+        list( $raw_key, $value ) = explode( ':', $line, 2 );
+        // Rimuove parametri es. DTSTART;VALUE=DATE → dtstart
+        $key   = strtolower( preg_replace( '/;.*$/', '', $raw_key ) );
+        $value = trim( $value );
+
+        // Normalizza date YYYYMMDD[Thhmmss[Z]] → YYYY-MM-DD
+        if ( in_array( $key, array( 'dtstart', 'dtend' ) ) ) {
+            if ( preg_match( '/^(\d{4})(\d{2})(\d{2})/', $value, $m ) ) {
+                $value = "{$m[1]}-{$m[2]}-{$m[3]}";
+            }
+        }
+
+        $current[ $key ] = $value;
+    }
+
+    return $events;
+}
+
+// ============================================================
+// 13. ESPORTATORE iCal — genera feed .ics per ogni unità
+// ============================================================
+function lemura_export_ical( $unit ) {
+    $unit_labels = array(
+        'sternatia'           => 'Sternatia Casa intera',
+        'corigliano-camera-1' => 'Corigliano Camera 1',
+        'corigliano-camera-2' => 'Corigliano Camera 2',
+    );
+
+    $posts = get_posts( array(
+        'post_type'   => 'prenotazione',
+        'post_status' => 'publish',
+        'numberposts' => -1,
+        'meta_query'  => array(
+            array( 'key' => 'pren_unit',   'value' => $unit ),
+            array( 'key' => 'pren_status', 'value' => array( 'confirmed', 'pending' ), 'compare' => 'IN' ),
+            array( 'key' => 'pren_checkout', 'value' => date( 'Y-m-d' ), 'compare' => '>=' ),
+        ),
+    ) );
+
+    $cal  = "BEGIN:VCALENDAR\r\n";
+    $cal .= "VERSION:2.0\r\n";
+    $cal .= "PRODID:-//Le Mura degli Angeli//Booking//IT\r\n";
+    $cal .= "CALSCALE:GREGORIAN\r\n";
+    $cal .= "METHOD:PUBLISH\r\n";
+    $cal .= "X-WR-CALNAME:Le Mura degli Angeli - " . ( $unit_labels[ $unit ] ?? $unit ) . "\r\n";
+
+    foreach ( $posts as $post ) {
+        $checkin  = get_post_meta( $post->ID, 'pren_checkin',  true );
+        $checkout = get_post_meta( $post->ID, 'pren_checkout', true );
+        if ( ! $checkin || ! $checkout ) continue;
+
+        $dtstart  = str_replace( '-', '', $checkin );
+        $dtend    = str_replace( '-', '', $checkout );
+        $uid      = 'pren-' . $post->ID . '@lemuradegliangelibnb';
+        $dtstamp  = gmdate( 'Ymd\THis\Z' );
+
+        $cal .= "BEGIN:VEVENT\r\n";
+        $cal .= "DTSTART;VALUE=DATE:{$dtstart}\r\n";
+        $cal .= "DTEND;VALUE=DATE:{$dtend}\r\n";
+        $cal .= "DTSTAMP:{$dtstamp}\r\n";
+        $cal .= "UID:{$uid}\r\n";
+        $cal .= "SUMMARY:Reserved\r\n";
+        $cal .= "END:VEVENT\r\n";
+    }
+
+    $cal .= "END:VCALENDAR\r\n";
+    return $cal;
+}
+
+// ============================================================
+// 14. REST API — Booking engine endpoints
+// ============================================================
+add_action( 'rest_api_init', function () {
+
+    $valid_units = array( 'sternatia', 'corigliano-camera-1', 'corigliano-camera-2' );
+
+    // ── GET /lemura-crm/v1/availability?unit=sternatia ──────
+    register_rest_route( 'lemura-crm/v1', '/availability', array(
+        'methods'             => WP_REST_Server::READABLE,
+        'permission_callback' => '__return_true',
+        'callback'            => function ( WP_REST_Request $request ) use ( $valid_units ) {
+            $unit = sanitize_text_field( $request->get_param( 'unit' ) ?? '' );
+            if ( ! in_array( $unit, $valid_units ) ) {
+                return new WP_Error( 'invalid_unit', 'Unità non valida. Valori accettati: ' . implode( ', ', $valid_units ), array( 'status' => 400 ) );
+            }
+
+            $posts = get_posts( array(
+                'post_type'   => 'prenotazione',
+                'post_status' => 'publish',
+                'numberposts' => -1,
+                'meta_query'  => array(
+                    array( 'key' => 'pren_unit',     'value' => $unit ),
+                    array( 'key' => 'pren_status',   'value' => array( 'confirmed', 'pending' ), 'compare' => 'IN' ),
+                    array( 'key' => 'pren_checkout',  'value' => date( 'Y-m-d' ), 'compare' => '>=' ),
+                ),
+            ) );
+
+            $blocked = array();
+            foreach ( $posts as $post ) {
+                $ci = get_post_meta( $post->ID, 'pren_checkin',  true );
+                $co = get_post_meta( $post->ID, 'pren_checkout', true );
+                if ( $ci && $co ) {
+                    $blocked[] = array( 'start' => $ci, 'end' => $co );
+                }
+            }
+
+            return rest_ensure_response( array( 'unit' => $unit, 'blocked' => $blocked ) );
+        },
+    ) );
+
+    // ── POST /lemura-crm/v1/bookings ────────────────────────
+    register_rest_route( 'lemura-crm/v1', '/bookings', array(
+        'methods'             => WP_REST_Server::CREATABLE,
+        'permission_callback' => '__return_true',
+        'callback'            => function ( WP_REST_Request $request ) use ( $valid_units ) {
+            $params = $request->get_json_params();
+            if ( empty( $params ) ) $params = $request->get_body_params();
+
+            $unit     = sanitize_text_field( $params['unit']     ?? '' );
+            $checkin  = sanitize_text_field( $params['checkin']  ?? '' );
+            $checkout = sanitize_text_field( $params['checkout'] ?? '' );
+            $nome     = sanitize_text_field( $params['nome']     ?? '' );
+            $email    = sanitize_email(      $params['email']    ?? '' );
+
+            // Validazione
+            if ( ! in_array( $unit, $valid_units ) ) {
+                return new WP_Error( 'invalid_unit', 'Unità non valida.', array( 'status' => 422 ) );
+            }
+            if ( ! $checkin || ! $checkout || ! $nome || ! $email ) {
+                return new WP_Error( 'missing_fields', 'Tutti i campi obbligatori devono essere compilati.', array( 'status' => 422 ) );
+            }
+            if ( ! is_email( $email ) ) {
+                return new WP_Error( 'invalid_email', 'Indirizzo email non valido.', array( 'status' => 422 ) );
+            }
+            if ( strtotime( $checkin ) >= strtotime( $checkout ) ) {
+                return new WP_Error( 'invalid_dates', 'Il check-out deve essere successivo al check-in.', array( 'status' => 422 ) );
+            }
+            if ( strtotime( $checkin ) < strtotime( 'today' ) ) {
+                return new WP_Error( 'past_dates', 'Non è possibile prenotare date nel passato.', array( 'status' => 422 ) );
+            }
+
+            // Controllo conflitti
+            $conflicts = get_posts( array(
+                'post_type'   => 'prenotazione',
+                'post_status' => 'publish',
+                'numberposts' => 1,
+                'meta_query'  => array(
+                    'relation' => 'AND',
+                    array( 'key' => 'pren_unit',     'value' => $unit ),
+                    array( 'key' => 'pren_status',   'value' => array( 'confirmed', 'pending' ), 'compare' => 'IN' ),
+                    array( 'key' => 'pren_checkin',  'value' => $checkout, 'compare' => '<' ),
+                    array( 'key' => 'pren_checkout', 'value' => $checkin,  'compare' => '>' ),
+                ),
+            ) );
+            if ( ! empty( $conflicts ) ) {
+                return new WP_Error( 'not_available', 'Le date selezionate non sono disponibili per questa struttura.', array( 'status' => 409 ) );
+            }
+
+            // Sanitizzazione campi opzionali
+            $telefono = sanitize_text_field(     $params['telefono'] ?? '' );
+            $ospiti   = absint(                  $params['ospiti']   ?? 1 );
+            $messaggio= sanitize_textarea_field( $params['messaggio']?? '' );
+
+            $unit_labels = array(
+                'sternatia'           => 'Sternatia — Casa intera',
+                'corigliano-camera-1' => 'Corigliano — Camera 1',
+                'corigliano-camera-2' => 'Corigliano — Camera 2',
+            );
+            $unit_label = $unit_labels[ $unit ] ?? $unit;
+
+            // Salvataggio
+            $post_id = wp_insert_post( array(
+                'post_type'   => 'prenotazione',
+                'post_status' => 'publish',
+                'post_title'  => "$unit_label — $nome — $checkin",
+            ) );
+            if ( is_wp_error( $post_id ) ) {
+                return new WP_Error( 'save_failed', 'Errore nel salvataggio.', array( 'status' => 500 ) );
+            }
+
+            $meta = array(
+                'pren_unit'        => $unit,
+                'pren_checkin'     => $checkin,
+                'pren_checkout'    => $checkout,
+                'pren_guest_name'  => $nome,
+                'pren_guest_email' => $email,
+                'pren_guest_phone' => $telefono,
+                'pren_guests'      => $ospiti,
+                'pren_message'     => $messaggio,
+                'pren_status'      => 'pending',
+                'pren_source'      => 'website',
+            );
+            foreach ( $meta as $k => $v ) update_post_meta( $post_id, $k, $v );
+
+            // Email notifica
+            $admin_email = get_option( 'admin_email' );
+            $subject = "[Le Mura degli Angeli] Nuova richiesta prenotazione: $unit_label";
+            $nights  = round( ( strtotime( $checkout ) - strtotime( $checkin ) ) / 86400 );
+            $body  = "Nuova richiesta di prenotazione dal sito.\n\n";
+            $body .= "Struttura: $unit_label\n";
+            $body .= "Check-in:  $checkin\n";
+            $body .= "Check-out: $checkout\n";
+            $body .= "Notti:     $nights\n";
+            $body .= "Ospiti:    $ospiti\n";
+            $body .= "Nome:      $nome\n";
+            $body .= "Email:     $email\n";
+            $body .= "Telefono:  $telefono\n";
+            if ( $messaggio ) $body .= "Messaggio:\n$messaggio\n";
+            $body .= "\n➡ Gestisci la richiesta:\n" . admin_url( "post.php?post=$post_id&action=edit" );
+
+            wp_mail( $admin_email, $subject, $body, array( "Reply-To: $nome <$email>" ) );
+
+            return rest_ensure_response( array(
+                'success' => true,
+                'id'      => $post_id,
+                'message' => 'Richiesta inviata con successo! Ti risponderemo entro 24 ore.',
+            ) );
+        },
+    ) );
+
+    // ── GET /lemura-crm/v1/calendar/{unit}.ics ──────────────
+    register_rest_route( 'lemura-crm/v1', '/calendar/(?P<unit>[a-z0-9-]+)\.ics', array(
+        'methods'             => WP_REST_Server::READABLE,
+        'permission_callback' => '__return_true',
+        'callback'            => function ( WP_REST_Request $request ) use ( $valid_units ) {
+            $unit = sanitize_text_field( $request->get_param( 'unit' ) );
+            if ( ! in_array( $unit, $valid_units ) ) {
+                return new WP_Error( 'invalid_unit', 'Unità non valida.', array( 'status' => 404 ) );
+            }
+            $ical = lemura_export_ical( $unit );
+            header( 'Content-Type: text/calendar; charset=utf-8' );
+            header( 'Content-Disposition: inline; filename="' . $unit . '.ics"' );
+            header( 'Cache-Control: no-cache, must-revalidate' );
+            echo $ical; // phpcs:ignore WordPress.Security.EscapeOutput
+            exit;
+        },
+    ) );
+
+} );
+
+// ============================================================
+// 15. CALENDARIO ADMIN — FullCalendar con tutte le prenotazioni
+// ============================================================
+add_action( 'admin_menu', function () {
+    add_submenu_page(
+        'edit.php?post_type=prenotazione',
+        'Calendario Prenotazioni',
+        '📅 Calendario',
+        'manage_options',
+        'lemura-calendario',
+        'lemura_calendario_page'
+    );
+} );
+
+function lemura_calendario_page() {
+
+    $status_colors = array(
+        'confirmed' => '#22c55e',
+        'pending'   => '#f59e0b',
+        'rejected'  => '#ef4444',
+        'cancelled' => '#94a3b8',
+    );
+    $unit_short = array(
+        'sternatia'           => 'Sternatia',
+        'corigliano-camera-1' => 'Cam.1',
+        'corigliano-camera-2' => 'Cam.2',
+    );
+
+    // — Prenotazioni —
+    $events = array();
+    $prenotazioni = get_posts( array(
+        'post_type'   => 'prenotazione',
+        'post_status' => 'publish',
+        'numberposts' => -1,
+    ) );
+    foreach ( $prenotazioni as $post ) {
+        $ci     = get_post_meta( $post->ID, 'pren_checkin',    true );
+        $co     = get_post_meta( $post->ID, 'pren_checkout',   true );
+        $status = get_post_meta( $post->ID, 'pren_status',     true ) ?: 'pending';
+        $unit   = get_post_meta( $post->ID, 'pren_unit',       true );
+        $nome   = get_post_meta( $post->ID, 'pren_guest_name', true );
+        $source = get_post_meta( $post->ID, 'pren_source',     true );
+        if ( ! $ci || ! $co ) continue;
+
+        $color = $status_colors[ $status ] ?? '#94a3b8';
+        $label = ( $unit_short[ $unit ] ?? '' ) . ' — ' . ( $nome ?: 'Ospite' );
+        if ( $source && $source !== 'website' ) {
+            $label .= ' (' . ucfirst( $source ) . ')';
+        }
+
+        $events[] = array(
+            'id'              => $post->ID,
+            'title'           => $label,
+            'start'           => $ci,
+            'end'             => $co,
+            'backgroundColor' => $color,
+            'borderColor'     => $color,
+            'textColor'       => '#ffffff',
+            'url'             => admin_url( 'post.php?post=' . $post->ID . '&action=edit' ),
+            'extendedProps'   => array(
+                'type'   => 'booking',
+                'unit'   => $unit,
+                'status' => $status,
+                'source' => $source,
+            ),
+        );
+    }
+
+    // — Richieste info dal form contatti (con date) —
+    $richieste = get_posts( array(
+        'post_type'   => 'richiesta_info',
+        'post_status' => 'publish',
+        'numberposts' => -1,
+    ) );
+    foreach ( $richieste as $post ) {
+        $ci   = get_post_meta( $post->ID, 'ri_checkin',  true );
+        $co   = get_post_meta( $post->ID, 'ri_checkout', true );
+        $nome = get_post_meta( $post->ID, 'ri_nome',     true );
+        if ( ! $ci || ! $co ) continue;
+
+        $events[] = array(
+            'id'              => 'ri-' . $post->ID,
+            'title'           => '✉ ' . ( $nome ?: 'Richiesta' ),
+            'start'           => $ci,
+            'end'             => $co,
+            'backgroundColor' => '#a78bfa',
+            'borderColor'     => '#7c3aed',
+            'textColor'       => '#ffffff',
+            'url'             => admin_url( 'post.php?post=' . $post->ID . '&action=edit' ),
+            'extendedProps'   => array( 'type' => 'inquiry' ),
+        );
+    }
+
+    $events_json = wp_json_encode( $events );
+    ?>
+    <div class="wrap">
+    <h1>📅 Calendario Prenotazioni</h1>
+
+    <!-- Legenda -->
+    <div style="display:flex;gap:1.5rem;align-items:center;flex-wrap:wrap;margin-bottom:1.5rem;padding:1rem 1.25rem;background:#fff;border-radius:8px;border:1px solid #e2e8f0;max-width:1100px">
+        <?php
+        $legend = array(
+            '#22c55e' => 'Confermata',
+            '#f59e0b' => 'In attesa',
+            '#ef4444' => 'Rifiutata',
+            '#94a3b8' => 'Annullata',
+            '#a78bfa' => 'Richiesta info',
+        );
+        foreach ( $legend as $color => $label ) :
+        ?>
+        <span style="display:inline-flex;align-items:center;gap:6px;font-size:13px">
+            <span style="width:14px;height:14px;border-radius:50%;background:<?= esc_attr( $color ) ?>;display:inline-block;flex-shrink:0"></span>
+            <?= esc_html( $label ) ?>
+        </span>
+        <?php endforeach; ?>
+        <span style="margin-left:auto;font-size:12px;color:#64748b">Click su un evento per aprire il dettaglio</span>
+    </div>
+
+    <div id="lemura-calendar" style="background:#fff;padding:1.5rem;border-radius:8px;border:1px solid #e2e8f0;max-width:1100px"></div>
+    </div>
+
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css" rel="stylesheet"/>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var calendarEl = document.getElementById('lemura-calendar');
+        var calendar   = new FullCalendar.Calendar(calendarEl, {
+            initialView  : 'dayGridMonth',
+            locale       : 'it',
+            firstDay     : 1,
+            height       : 'auto',
+            headerToolbar: {
+                left  : 'prev,next today',
+                center: 'title',
+                right : 'dayGridMonth,listMonth',
+            },
+            buttonText: {
+                today    : 'Oggi',
+                month    : 'Mese',
+                listMonth: 'Lista',
+            },
+            events: <?= $events_json; ?>,
+            eventClick: function (info) {
+                if (info.event.url) {
+                    info.jsEvent.preventDefault();
+                    window.location.href = info.event.url;
+                }
+            },
+            eventDidMount: function (info) {
+                var props  = info.event.extendedProps;
+                var status = props.status || props.type;
+                var labels = { confirmed:'Confermata', pending:'In attesa', rejected:'Rifiutata', cancelled:'Annullata', inquiry:'Richiesta info' };
+                info.el.title = info.event.title + '\nStato: ' + (labels[status] || status);
+            },
+            eventContent: function (arg) {
+                // Aggiunge pallino di stato a sinistra del titolo
+                var colors = { confirmed:'#22c55e', pending:'#f59e0b', rejected:'#ef4444', cancelled:'#94a3b8', inquiry:'#a78bfa' };
+                var status = arg.event.extendedProps.status || arg.event.extendedProps.type;
+                var dotColor = colors[status] || '#94a3b8';
+                return {
+                    html: '<span style="display:inline-flex;align-items:center;gap:5px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;width:100%;font-size:0.8em;padding:1px 4px">'
+                        + '<span style="width:8px;height:8px;border-radius:50%;background:#fff;opacity:0.9;flex-shrink:0"></span>'
+                        + '<span style="overflow:hidden;text-overflow:ellipsis">' + arg.event.title + '</span>'
+                        + '</span>'
+                };
+            },
+        });
+        calendar.render();
+    });
+    </script>
+    <?php
+}
+
+// ============================================================
+// 16. LISTA PRENOTAZIONI — colonne personalizzate + pallini
+// ============================================================
+
+// Colonne nella lista CPT prenotazione
+add_filter( 'manage_prenotazione_posts_columns', function ( $columns ) {
+    $new = array();
+    foreach ( $columns as $key => $val ) {
+        if ( $key === 'title' ) {
+            $new['title']         = $val;
+            $new['lemura_stato']  = 'Stato';
+            $new['lemura_unit']   = 'Unità';
+            $new['lemura_dates']  = 'Date';
+            $new['lemura_guest']  = 'Ospite';
+            $new['lemura_source'] = 'Fonte';
+        } elseif ( $key !== 'date' ) {
+            $new[ $key ] = $val;
+        }
+    }
+    return $new;
+} );
+
+add_action( 'manage_prenotazione_posts_custom_column', function ( $column, $post_id ) {
+
+    $status_colors = array(
+        'confirmed' => '#22c55e',
+        'pending'   => '#f59e0b',
+        'rejected'  => '#ef4444',
+        'cancelled' => '#94a3b8',
+    );
+    $status_labels = array(
+        'confirmed' => 'Confermata',
+        'pending'   => 'In attesa',
+        'rejected'  => 'Rifiutata',
+        'cancelled' => 'Annullata',
+    );
+    $unit_labels = array(
+        'sternatia'           => 'Sternatia',
+        'corigliano-camera-1' => 'Corigliano Cam.1',
+        'corigliano-camera-2' => 'Corigliano Cam.2',
+    );
+    $source_icons = array(
+        'website' => '🌐 Sito',
+        'airbnb'  => '🏠 Airbnb',
+        'booking' => '🔵 Booking',
+        'manual'  => '✏️ Manuale',
+    );
+
+    switch ( $column ) {
+
+        case 'lemura_stato':
+            $status = get_post_meta( $post_id, 'pren_status', true ) ?: 'pending';
+            $color  = $status_colors[ $status ] ?? '#94a3b8';
+            $label  = $status_labels[ $status ] ?? $status;
+            echo '<span style="display:inline-flex;align-items:center;gap:6px">';
+            echo '<span style="width:12px;height:12px;border-radius:50%;background:' . esc_attr( $color ) . ';display:inline-block;flex-shrink:0"></span>';
+            echo '<strong>' . esc_html( $label ) . '</strong>';
+            echo '</span>';
+            break;
+
+        case 'lemura_unit':
+            $unit = get_post_meta( $post_id, 'pren_unit', true );
+            echo '<span style="font-size:12px">' . esc_html( $unit_labels[ $unit ] ?? $unit ) . '</span>';
+            break;
+
+        case 'lemura_dates':
+            $ci = get_post_meta( $post_id, 'pren_checkin',  true );
+            $co = get_post_meta( $post_id, 'pren_checkout', true );
+            if ( $ci && $co ) {
+                $nights = round( ( strtotime( $co ) - strtotime( $ci ) ) / 86400 );
+                echo '<span style="font-size:12px">';
+                echo esc_html( date_i18n( 'd/m/Y', strtotime( $ci ) ) ) . ' → ' . esc_html( date_i18n( 'd/m/Y', strtotime( $co ) ) );
+                echo '<br><span style="color:#64748b">' . $nights . ' nott' . ( $nights === 1 ? 'e' : 'i' ) . '</span>';
+                echo '</span>';
+            }
+            break;
+
+        case 'lemura_guest':
+            $nome  = get_post_meta( $post_id, 'pren_guest_name',  true );
+            $email = get_post_meta( $post_id, 'pren_guest_email', true );
+            $phone = get_post_meta( $post_id, 'pren_guest_phone', true );
+            echo '<span style="font-size:12px">';
+            if ( $nome )  echo '<strong>' . esc_html( $nome ) . '</strong><br>';
+            if ( $email ) echo '<a href="mailto:' . esc_attr( $email ) . '">' . esc_html( $email ) . '</a>';
+            if ( $phone ) echo '<br>' . esc_html( $phone );
+            echo '</span>';
+            break;
+
+        case 'lemura_source':
+            $source = get_post_meta( $post_id, 'pren_source', true );
+            echo '<span style="font-size:12px">' . esc_html( $source_icons[ $source ] ?? $source ) . '</span>';
+            break;
+    }
+
+}, 10, 2 );
+
+// Rendi sortable la colonna stato
+add_filter( 'manage_edit-prenotazione_sortable_columns', function ( $columns ) {
+    $columns['lemura_stato'] = 'pren_status';
+    $columns['lemura_dates'] = 'pren_checkin';
+    return $columns;
+} );
+
+// Filtro rapido per stato nella lista
+add_action( 'restrict_manage_posts', function ( $post_type ) {
+    if ( $post_type !== 'prenotazione' ) return;
+
+    $current = $_GET['lemura_filter_status'] ?? '';
+    $stati   = array(
+        ''          => 'Tutti gli stati',
+        'pending'   => '🟡 In attesa',
+        'confirmed' => '🟢 Confermate',
+        'rejected'  => '🔴 Rifiutate',
+        'cancelled' => '⚫ Annullate',
+    );
+    echo '<select name="lemura_filter_status">';
+    foreach ( $stati as $val => $label ) {
+        echo '<option value="' . esc_attr( $val ) . '"' . selected( $current, $val, false ) . '>' . esc_html( $label ) . '</option>';
+    }
+    echo '</select>';
+} );
+
+add_action( 'pre_get_posts', function ( $query ) {
+    if ( ! is_admin() || $query->get( 'post_type' ) !== 'prenotazione' ) return;
+    $filter = $_GET['lemura_filter_status'] ?? '';
+    if ( $filter ) {
+        $query->set( 'meta_query', array(
+            array( 'key' => 'pren_status', 'value' => $filter ),
+        ) );
+    }
+} );
+
+// ============================================================
+// 17. EMAIL DI CONFERMA — inviata al cliente quando lo stato
+//     cambia a "confirmed" (una volta sola, anti-duplicato)
+// ============================================================
+add_action( 'updated_post_meta', function ( $meta_id, $post_id, $meta_key, $new_value ) {
+
+    if ( $meta_key !== 'pren_status' || $new_value !== 'confirmed' ) return;
+    if ( get_post_type( $post_id ) !== 'prenotazione' ) return;
+
+    // Anti-duplicato: non inviare se già inviata
+    if ( get_post_meta( $post_id, 'pren_confirm_email_sent', true ) ) return;
+
+    $email  = get_post_meta( $post_id, 'pren_guest_email', true );
+    if ( ! $email || ! is_email( $email ) ) return;
+
+    $nome    = get_post_meta( $post_id, 'pren_guest_name',  true ) ?: 'Ospite';
+    $unit    = get_post_meta( $post_id, 'pren_unit',        true );
+    $ci      = get_post_meta( $post_id, 'pren_checkin',     true );
+    $co      = get_post_meta( $post_id, 'pren_checkout',    true );
+    $guests  = get_post_meta( $post_id, 'pren_guests',      true );
+    $message = get_post_meta( $post_id, 'pren_message',     true );
+
+    $unit_labels = array(
+        'sternatia'           => "Sternatia \xe2\x80\x94 Casa intera",
+        'corigliano-camera-1' => "Corigliano d'Otranto \xe2\x80\x94 Camera 1",
+        'corigliano-camera-2' => "Corigliano d'Otranto \xe2\x80\x94 Camera 2",
+    );
+    $unit_label = $unit_labels[ $unit ] ?? $unit;
+    $nights     = $ci && $co ? round( ( strtotime( $co ) - strtotime( $ci ) ) / 86400 ) : '—';
+    $ci_fmt     = $ci ? date_i18n( 'd/m/Y', strtotime( $ci ) ) : '—';
+    $co_fmt     = $co ? date_i18n( 'd/m/Y', strtotime( $co ) ) : '—';
+
+    $subject = 'Prenotazione confermata — Le Mura degli Angeli';
+
+    // Email HTML
+    $html  = '<!DOCTYPE html><html lang="it"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width"/></head>';
+    $html .= '<body style="margin:0;padding:0;background:#f8f5f0;font-family:Georgia,serif">';
+    $html .= '<table width="100%" cellpadding="0" cellspacing="0"><tr><td style="padding:40px 20px">';
+    $html .= '<table width="600" cellpadding="0" cellspacing="0" align="center" style="background:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08)">';
+
+    // Header
+    $html .= '<tr><td style="background:#1a1a1a;padding:32px 40px;text-align:center">';
+    $html .= '<h1 style="color:#e8d5b0;font-family:Georgia,serif;font-size:24px;font-weight:400;margin:0;letter-spacing:0.05em">Le Mura degli Angeli</h1>';
+    $html .= '<p style="color:#9a8c7a;font-size:13px;margin:6px 0 0;letter-spacing:0.08em;text-transform:uppercase">Salento, Puglia</p>';
+    $html .= '</td></tr>';
+
+    // Banner conferma
+    $html .= '<tr><td style="background:#22c55e;padding:16px 40px;text-align:center">';
+    $html .= '<p style="color:#ffffff;font-size:16px;font-weight:bold;margin:0;letter-spacing:0.03em">✅ Prenotazione Confermata</p>';
+    $html .= '</td></tr>';
+
+    // Corpo
+    $html .= '<tr><td style="padding:40px">';
+    $html .= '<p style="font-size:16px;color:#2d2d2d;margin:0 0 24px">Caro/a <strong>' . esc_html( $nome ) . '</strong>,</p>';
+    $html .= '<p style="font-size:15px;color:#4a4a4a;line-height:1.7;margin:0 0 32px">Siamo lieti di confermarti la prenotazione presso <strong>Le Mura degli Angeli</strong>. Non vediamo l\'ora di accoglierti nel cuore del Salento!</p>';
+
+    // Riepilogo prenotazione
+    $html .= '<table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e8d5b0;border-radius:6px;overflow:hidden;margin-bottom:32px">';
+    $html .= '<tr><td colspan="2" style="background:#f8f5f0;padding:12px 20px;font-size:11px;font-weight:bold;letter-spacing:0.08em;text-transform:uppercase;color:#7a6a55">Riepilogo prenotazione</td></tr>';
+
+    $rows = array(
+        'Struttura'   => $unit_label,
+        'Check-in'    => $ci_fmt,
+        'Check-out'   => $co_fmt,
+        'Notti'       => $nights,
+        'Ospiti'      => $guests,
+    );
+    $i = 0;
+    foreach ( $rows as $lbl => $val ) {
+        $bg = ( $i % 2 === 0 ) ? '#ffffff' : '#fdfaf7';
+        $html .= '<tr style="background:' . $bg . '">';
+        $html .= '<td style="padding:12px 20px;font-size:14px;color:#7a6a55;width:40%">' . esc_html( $lbl ) . '</td>';
+        $html .= '<td style="padding:12px 20px;font-size:14px;color:#1a1a1a;font-weight:bold">' . esc_html( $val ) . '</td>';
+        $html .= '</tr>';
+        $i++;
+    }
+    $html .= '</table>';
+
+    // Contatti
+    $html .= '<div style="background:#f8f5f0;border-radius:6px;padding:20px;margin-bottom:32px">';
+    $html .= '<p style="font-size:13px;font-weight:bold;letter-spacing:0.06em;text-transform:uppercase;color:#7a6a55;margin:0 0 12px">Per qualsiasi necessità</p>';
+    $html .= '<p style="font-size:14px;color:#4a4a4a;margin:4px 0">📧 <a href="mailto:lemuradegliangeli@yahoo.com" style="color:#1a1a1a">lemuradegliangeli@yahoo.com</a></p>';
+    $html .= '<p style="font-size:14px;color:#4a4a4a;margin:4px 0">📞 <a href="tel:+393271208496" style="color:#1a1a1a">+39 327 1208496</a></p>';
+    $html .= '<p style="font-size:14px;color:#4a4a4a;margin:4px 0">📍 Via Giudeca 28, Sternatia (LE) — Salento, Puglia</p>';
+    $html .= '</div>';
+
+    $html .= '<p style="font-size:15px;color:#4a4a4a;line-height:1.7;margin:0">A presto,<br><strong>Lo staff di Le Mura degli Angeli</strong></p>';
+    $html .= '</td></tr>';
+
+    // Footer
+    $html .= '<tr><td style="background:#1a1a1a;padding:20px 40px;text-align:center">';
+    $html .= '<p style="color:#6b6055;font-size:12px;margin:0">Le Mura degli Angeli · Via Giudeca 28, Sternatia (LE)</p>';
+    $html .= '</td></tr>';
+
+    $html .= '</table>';
+    $html .= '</td></tr></table>';
+    $html .= '</body></html>';
+
+    $headers = array(
+        'Content-Type: text/html; charset=UTF-8',
+        'From: Le Mura degli Angeli <' . get_option( 'admin_email' ) . '>',
+    );
+
+    wp_mail( $email, $subject, $html, $headers );
+
+    // Segna come inviata (anti-duplicato)
+    update_post_meta( $post_id, 'pren_confirm_email_sent', current_time( 'mysql' ) );
+
+}, 10, 4 );
+
+// ============================================================
+// 18. OTTIMIZZAZIONI
 // ============================================================
 add_filter( 'xmlrpc_enabled', '__return_false' );
 remove_action( 'wp_head', 'wp_generator' );
