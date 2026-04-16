@@ -1,7 +1,9 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import useWP from "../hooks/useWP";
 import { getStrutture } from "../lib/wordpress";
 import BookingWidget from "../components/BookingWidget";
+import BookingFAB from "../components/BookingFAB";
 
 const PLACEHOLDER_STRUTTURE = [
   {
@@ -45,6 +47,24 @@ export default function Homepage() {
   const AIRBNB_URL = import.meta.env.VITE_AIRBNB_URL || "#";
   const { data: apiData } = useWP(() => getStrutture());
   const strutture = normalizeStrutture(apiData);
+  const [bookingOpen, setBookingOpen] = useState(false);
+
+  useEffect(() => {
+    document.body.style.overflow = bookingOpen ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [bookingOpen]);
+
+  useEffect(() => {
+    if (!bookingOpen) return;
+    const handler = (e) => {
+      if (e.key === "Escape") setBookingOpen(false);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [bookingOpen]);
+
   return (
     <>
       {/* ═══════ HERO ═══════ */}
@@ -82,14 +102,13 @@ export default function Homepage() {
                 leccese e il calore del sud.
               </p>
               <div className="d-flex gap-3 flex-wrap">
-                <a
-                  href={AIRBNB_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  type="button"
+                  onClick={() => setBookingOpen(true)}
                   className="btn-bnb btn-bnb-accent"
                 >
                   Prenota il soggiorno
-                </a>
+                </button>
                 <Link to="/strutture" className="btn-bnb btn-bnb-white">
                   Scopri le strutture
                 </Link>
@@ -201,6 +220,61 @@ export default function Homepage() {
           </div>
         </div>
       </section>
+
+      {/* ═══════ BOOKING POPUP ═══════ */}
+      {bookingOpen && (
+        <div
+          onClick={() => setBookingOpen(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 1060,
+            background: "rgba(0,0,0,0.55)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "1rem",
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              position: "relative",
+              width: "100%",
+              maxWidth: "900px",
+              maxHeight: "90vh",
+              overflowY: "auto",
+              borderRadius: "var(--radius-lg)",
+            }}
+          >
+            <button
+              onClick={() => setBookingOpen(false)}
+              aria-label="Chiudi"
+              style={{
+                position: "absolute",
+                top: "1rem",
+                right: "1rem",
+                zIndex: 10,
+                background: "var(--color-surface)",
+                border: "1px solid var(--color-border)",
+                borderRadius: "50%",
+                width: "2rem",
+                height: "2rem",
+                cursor: "pointer",
+                fontSize: "1rem",
+                lineHeight: 1,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "var(--color-muted)",
+              }}
+            >
+              ✕
+            </button>
+            <BookingWidget />
+          </div>
+        </div>
+      )}
 
       {/* ═══════ CTA PRENOTAZIONE ═══════ */}
       <section
