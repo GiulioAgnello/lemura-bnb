@@ -3,6 +3,10 @@
     {
       "source": "/wp-json/:path*",
       "destination": "https://api.lemuradegliangeli.it/wp-json/:path*"
+    },
+    {
+      "source": "/((?!assets/).*)",
+      "destination": "/index.html"
     }
   ]
 }
