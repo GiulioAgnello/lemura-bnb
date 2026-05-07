@@ -43,7 +43,7 @@ export default function Footer() {
           </div>
 
           <div className="col-lg-2 text-lg-end">
-            <h5>Prenota</h5>
+            <h5>Prenota anche su:</h5>
             <a
               href={AIRBNB_URL}
               target="_blank"
