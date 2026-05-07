@@ -136,7 +136,7 @@ export async function getRecensioni() {
  */
 export async function getSternatia() {
   try {
-    const res = await fetch(`${CRM_URL}/sternatia`);
+    const res = await fetch(`${CRM_URL}/sternatia?_=${Date.now()}`);
     if (!res.ok) {
       console.error(`CRM API [${res.status}]: /sternatia`);
       return null;
@@ -164,7 +164,7 @@ export async function getSternatia() {
  */
 export async function getCorigliano() {
   try {
-    const res = await fetch(`${CRM_URL}/corigliano`);
+    const res = await fetch(`${CRM_URL}/corigliano?_=${Date.now()}`);
     if (!res.ok) {
       console.error(`CRM API [${res.status}]: /corigliano`);
       return null;

@@ -35,6 +35,8 @@ add_action( 'rest_api_init', function () {
         header( 'Access-Control-Allow-Origin: *' );
         header( 'Access-Control-Allow-Methods: GET, POST, OPTIONS' );
         header( 'Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With' );
+        header( 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0' );
+        header( 'Pragma: no-cache' );
         return $value;
     } );
 }, 15 );
