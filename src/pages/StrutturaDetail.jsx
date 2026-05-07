@@ -489,32 +489,3 @@ export default function StrutturaDetail() {
   const data = normalizeSternatia(rawData) || PLACEHOLDER_STERNATIA;
   return <SternatiaDetail data={data} />;
 }
- "sternatia";
-
-  const { data: rawData, loading } = useWP(
-    () => (isCorigliano ? getCorigliano() : isSternatia ? getSternatia() : Promise.resolve(null)),
-    [slug]
-  );
-
-  if (loading) return <Loader />;
-
-  if (!isCorigliano && !isSternatia) {
-    return (
-      <div className="section-padding text-center">
-        <h2>Struttura non trovata</h2>
-        <Link to="/strutture" className="btn-bnb mt-3">
-          ← Torna alle strutture
-        </Link>
-      </div>
-    );
-  }
-
-  if (isCorigliano) {
-    const data = normalizeCorigliano(rawData);
-    const rooms = data.rooms.length > 0 ? data.rooms : PLACEHOLDER_CORIGLIANO.rooms;
-    return <CoriglianoDetail data={{ rooms }} />;
-  }
-
-  const data = normalizeSternatia(rawData) || PLACEHOLDER_STERNATIA;
-  return <SternatiaDetail data={data} />;
-}
