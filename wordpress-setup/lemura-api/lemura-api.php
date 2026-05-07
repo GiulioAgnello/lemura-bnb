@@ -317,8 +317,17 @@ function lemura_format_alloggio( $post ) {
         foreach ( (array) $ids as $att_id ) {
             $att_id = absint( $att_id );
             if ( ! $att_id ) continue;
-            $src = wp_get_attachment_image_src( $att_id, 'large' );
-            if ( ! $src ) continue;
+            // Prova large, poi medium_large, poi full
+            $src = wp_get_attachment_image_src( $att_id, 'large' )
+                ?: wp_get_attachment_image_src( $att_id, 'medium_large' )
+                ?: wp_get_attachment_image_src( $att_id, 'full' );
+            if ( ! $src ) {
+                // Fallback assoluto: URL diretto del file
+                $url = wp_get_attachment_url( $att_id );
+                if ( ! $url ) continue;
+                $meta  = wp_get_attachment_metadata( $att_id );
+                $src   = array( $url, $meta['width'] ?? 0, $meta['height'] ?? 0 );
+            }
             $alt       = get_post_meta( $att_id, '_wp_attachment_image_alt', true );
             $gallery[] = array(
                 'url'    => $src[0],
@@ -400,6 +409,22 @@ function lemura_query_struttura( $struttura, $limit = -1 ) {
 // 6. REST API ENDPOINTS
 // ============================================================
 add_action( 'rest_api_init', function () {
+
+    // DEBUG TEMPORANEO — GET /wp-json/lemura-crm/v1/debug-gallery?post_id=X
+    register_rest_route( 'lemura-crm/v1', '/debug-gallery', array(
+        'methods'             => WP_REST_Server::READABLE,
+        'permission_callback' => '__return_true',
+        'callback'            => function ( $req ) {
+            $post_id = absint( $req->get_param( 'post_id' ) );
+            $raw     = get_post_meta( $post_id, '_lemura_gallery', true );
+            $ids     = is_array( $raw ) ? $raw : json_decode( $raw, true );
+            return rest_ensure_response( array(
+                'post_id'     => $post_id,
+                'raw_meta'    => $raw,
+                'decoded_ids' => $ids,
+            ) );
+        },
+    ) );
 
     // GET /wp-json/lemura-crm/v1/sternatia
     register_rest_route( 'lemura-crm/v1', '/sternatia', array(

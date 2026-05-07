@@ -5,7 +5,7 @@
       "destination": "https://api.lemuradegliangeli.it/wp-json/:path*"
     },
     {
-      "source": "/:path((?!.*\\.).*)",
+      "source": "/(.*)",
       "destination": "/index.html"
     }
   ]
