@@ -295,6 +295,23 @@ export async function submitBooking(formData) {
 }
 
 /**
+ * Calcola il prezzo per un soggiorno.
+ * GET /wp-json/lemura-crm/v1/pricing?unit=&checkin=&checkout=&ospiti=
+ * Ritorna: { totale, notti, extra_ospiti, dettaglio, errori, min_notti, max_notti }
+ */
+export async function getPricing({ unit, checkin, checkout, ospiti }) {
+  try {
+    const params = new URLSearchParams({ unit, checkin, checkout, ospiti });
+    const res = await fetch(`${CRM_URL}/pricing?${params}`);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (err) {
+    console.error("CRM API Error (pricing):", err);
+    return null;
+  }
+}
+
+/**
  * Invia una richiesta di disponibilità dal form contatti.
  * POST /wp-json/lemura-crm/v1/inquiries
  * Ritorna { success, message } oppure lancia un errore.

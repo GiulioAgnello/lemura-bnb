@@ -121,13 +121,18 @@ export default function CameraDetail() {
             <div className="mb-4">
               {camera.prezzo && (
                 <div
-                  className="d-flex justify-content-between py-2"
+                  className="d-flex justify-content-between align-items-center py-2"
                   style={{ borderBottom: "1px solid var(--color-border)" }}
                 >
                   <span className="text-muted">Prezzo</span>
-                  <strong style={{ color: "var(--color-accent)" }}>
-                    da €{camera.prezzo}/notte
-                  </strong>
+                  <div style={{ textAlign: "right" }}>
+                    <span style={{ color: "var(--color-accent)", fontWeight: 700, fontSize: "1.1rem" }}>
+                      €{camera.prezzo} / notte
+                    </span>
+                    <div style={{ fontSize: "0.72rem", color: "var(--color-muted)", marginTop: "1px" }}>
+                      prezzo base per due persone
+                    </div>
+                  </div>
                 </div>
               )}
               {camera.ospiti && (

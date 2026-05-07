@@ -167,6 +167,114 @@ add_action( 'acf/init', function () {
                 'return_format' => 'array',
             ),
 
+            // ── Tariffario ──────────────────────────────────────
+            array(
+                'key'          => 'field_unit_id',
+                'label'        => 'ID Unità prenotazione',
+                'name'         => 'unit_id',
+                'type'         => 'select',
+                'required'     => 1,
+                'choices'      => array(
+                    'sternatia'           => 'Sternatia — Casa intera',
+                    'corigliano-camera-1' => 'Corigliano — Camera 1',
+                    'corigliano-camera-2' => 'Corigliano — Camera 2',
+                    'corigliano-spa'      => 'Corigliano — Spa',
+                ),
+                'instructions' => 'Collega questo alloggio all\'unità di prenotazione corrispondente.',
+            ),
+
+            array(
+                'key'           => 'field_ospiti_base',
+                'label'         => 'Ospiti inclusi nel prezzo base',
+                'name'          => 'ospiti_base',
+                'type'          => 'number',
+                'default_value' => 2,
+                'min'           => 1,
+                'instructions'  => 'Quante persone sono già incluse nel prezzo a notte (di solito 2).',
+            ),
+
+            array(
+                'key'           => 'field_ospiti_massimi',
+                'label'         => 'Ospiti massimi',
+                'name'          => 'ospiti_massimi',
+                'type'          => 'number',
+                'default_value' => 4,
+                'min'           => 1,
+                'instructions'  => 'Numero massimo di ospiti accettati.',
+            ),
+
+            array(
+                'key'           => 'field_extra_per_ospite',
+                'label'         => 'Extra per ospite aggiuntivo (€/notte)',
+                'name'          => 'extra_per_ospite',
+                'type'          => 'number',
+                'default_value' => 0,
+                'min'           => 0,
+                'step'          => '0.5',
+                'instructions'  => 'Importo aggiunto per ogni ospite oltre il numero base, per ogni notte.',
+            ),
+
+            array(
+                'key'           => 'field_min_notti',
+                'label'         => 'Soggiorno minimo (notti)',
+                'name'          => 'min_notti',
+                'type'          => 'number',
+                'default_value' => 2,
+                'min'           => 1,
+            ),
+
+            array(
+                'key'           => 'field_max_notti',
+                'label'         => 'Soggiorno massimo (notti)',
+                'name'          => 'max_notti',
+                'type'          => 'number',
+                'default_value' => 30,
+                'min'           => 1,
+            ),
+
+            array(
+                'key'          => 'field_tariffe_stagionali',
+                'label'        => 'Tariffe stagionali',
+                'name'         => 'tariffe_stagionali',
+                'type'         => 'repeater',
+                'layout'       => 'block',
+                'button_label' => 'Aggiungi tariffa',
+                'instructions' => 'Queste tariffe sovrascrivono il prezzo base per le date indicate. La prima tariffa che corrisponde alla data vince.',
+                'sub_fields'   => array(
+                    array(
+                        'key'         => 'field_ts_nome',
+                        'label'       => 'Nome stagione',
+                        'name'        => 'nome',
+                        'type'        => 'text',
+                        'placeholder' => 'es. Alta stagione, Ferragosto...',
+                    ),
+                    array(
+                        'key'            => 'field_ts_data_inizio',
+                        'label'          => 'Dal',
+                        'name'           => 'data_inizio',
+                        'type'           => 'date_picker',
+                        'display_format' => 'd/m/Y',
+                        'return_format'  => 'Y-m-d',
+                    ),
+                    array(
+                        'key'            => 'field_ts_data_fine',
+                        'label'          => 'Al (incluso)',
+                        'name'           => 'data_fine',
+                        'type'           => 'date_picker',
+                        'display_format' => 'd/m/Y',
+                        'return_format'  => 'Y-m-d',
+                    ),
+                    array(
+                        'key'   => 'field_ts_prezzo',
+                        'label' => 'Prezzo/notte (€)',
+                        'name'  => 'prezzo_notte',
+                        'type'  => 'number',
+                        'min'   => 0,
+                        'step'  => '0.5',
+                    ),
+                ),
+            ),
+
         ),
         'location' => array( array( array(
             'param'    => 'post_type',
@@ -231,21 +339,41 @@ function lemura_format_alloggio( $post ) {
         }
     }
 
+    // Tariffe stagionali
+    $tariffe_stagionali = array();
+    if ( ! empty( $acf['tariffe_stagionali'] ) && is_array( $acf['tariffe_stagionali'] ) ) {
+        foreach ( $acf['tariffe_stagionali'] as $t ) {
+            $tariffe_stagionali[] = array(
+                'nome'        => $t['nome']        ?? '',
+                'data_inizio' => $t['data_inizio'] ?? '',
+                'data_fine'   => $t['data_fine']   ?? '',
+                'prezzo_notte'=> isset( $t['prezzo_notte'] ) ? floatval( $t['prezzo_notte'] ) : 0,
+            );
+        }
+    }
+
     return array(
-        'id'             => $post->ID,
-        'title'          => get_the_title( $post->ID ),
-        'slug'           => $post->post_name,
-        'description'    => apply_filters( 'the_content', $post->post_content ),
-        'excerpt'        => $post->post_excerpt,
-        'struttura'      => isset( $acf['struttura'] )    ? $acf['struttura']    : '',
-        'tipo'           => isset( $acf['tipo'] )          ? $acf['tipo']         : '',
-        'prezzo_notte'   => isset( $acf['prezzo_notte'] )  ? $acf['prezzo_notte'] : '',
-        'superficie'     => isset( $acf['superficie'] )    ? $acf['superficie']   : '',
-        'servizi'        => $servizi,
-        'checkin_time'   => isset( $acf['checkin_time'] )  ? $acf['checkin_time'] : '',
-        'checkout_time'  => isset( $acf['checkout_time'] ) ? $acf['checkout_time']: '',
-        'featured_image' => $featured_image,
-        'gallery'        => $gallery,
+        'id'                 => $post->ID,
+        'title'              => get_the_title( $post->ID ),
+        'slug'               => $post->post_name,
+        'description'        => apply_filters( 'the_content', $post->post_content ),
+        'excerpt'            => $post->post_excerpt,
+        'struttura'          => $acf['struttura']          ?? '',
+        'tipo'               => $acf['tipo']               ?? '',
+        'unit_id'            => $acf['unit_id']            ?? '',
+        'prezzo_notte'       => $acf['prezzo_notte']       ?? '',
+        'ospiti_base'        => intval( $acf['ospiti_base']        ?? 2 ),
+        'ospiti_massimi'     => intval( $acf['ospiti_massimi']     ?? 4 ),
+        'extra_per_ospite'   => floatval( $acf['extra_per_ospite'] ?? 0 ),
+        'min_notti'          => intval( $acf['min_notti']          ?? 2 ),
+        'max_notti'          => intval( $acf['max_notti']          ?? 30 ),
+        'tariffe_stagionali' => $tariffe_stagionali,
+        'superficie'         => $acf['superficie']         ?? '',
+        'servizi'            => $servizi,
+        'checkin_time'       => $acf['checkin_time']       ?? '',
+        'checkout_time'      => $acf['checkout_time']      ?? '',
+        'featured_image'     => $featured_image,
+        'gallery'            => $gallery,
     );
 }
 
@@ -1167,7 +1295,151 @@ add_action( 'rest_api_init', function () {
 } );
 
 // ============================================================
-// 15. CALENDARIO ADMIN — FullCalendar con tutte le prenotazioni
+// 15. PRICING ENGINE
+//     GET /wp-json/lemura-crm/v1/pricing
+//     ?unit=sternatia&checkin=YYYY-MM-DD&checkout=YYYY-MM-DD&ospiti=N
+// ============================================================
+
+// Helper: trova l'alloggio dato l'unit_id
+function lemura_get_alloggio_by_unit( $unit_id ) {
+    $posts = get_posts( array(
+        'post_type'   => 'alloggio',
+        'post_status' => 'publish',
+        'numberposts' => 1,
+        'meta_query'  => array( array(
+            'key'   => 'unit_id',
+            'value' => $unit_id,
+        ) ),
+    ) );
+    return ! empty( $posts ) ? $posts[0] : null;
+}
+
+// Helper: calcola prezzo per una singola notte dato le tariffe stagionali
+function lemura_prezzo_per_notte( $data_str, $prezzo_base, $tariffe_stagionali ) {
+    foreach ( $tariffe_stagionali as $t ) {
+        if (
+            ! empty( $t['data_inizio'] ) &&
+            ! empty( $t['data_fine'] ) &&
+            $data_str >= $t['data_inizio'] &&
+            $data_str <= $t['data_fine']
+        ) {
+            return array(
+                'prezzo'  => floatval( $t['prezzo_notte'] ),
+                'stagione'=> $t['nome'] ?? null,
+            );
+        }
+    }
+    return array( 'prezzo' => $prezzo_base, 'stagione' => null );
+}
+
+add_action( 'rest_api_init', function () {
+
+    $valid_units = array( 'sternatia', 'corigliano-camera-1', 'corigliano-camera-2' );
+
+    register_rest_route( 'lemura-crm/v1', '/pricing', array(
+        'methods'             => WP_REST_Server::READABLE,
+        'permission_callback' => '__return_true',
+        'callback'            => function ( WP_REST_Request $request ) use ( $valid_units ) {
+
+            $unit     = sanitize_text_field( $request->get_param( 'unit' )     ?? '' );
+            $checkin  = sanitize_text_field( $request->get_param( 'checkin' )  ?? '' );
+            $checkout = sanitize_text_field( $request->get_param( 'checkout' ) ?? '' );
+            $ospiti   = absint( $request->get_param( 'ospiti' ) ?? 2 );
+            if ( $ospiti < 1 ) $ospiti = 1;
+
+            if ( ! in_array( $unit, $valid_units ) ) {
+                return new WP_Error( 'invalid_unit', 'Unità non valida.', array( 'status' => 400 ) );
+            }
+            if ( ! $checkin || ! $checkout ) {
+                return new WP_Error( 'missing_dates', 'Checkin e checkout sono obbligatori.', array( 'status' => 400 ) );
+            }
+            if ( strtotime( $checkin ) >= strtotime( $checkout ) ) {
+                return new WP_Error( 'invalid_dates', 'Il checkout deve essere successivo al checkin.', array( 'status' => 400 ) );
+            }
+
+            // Trova alloggio
+            $post = lemura_get_alloggio_by_unit( $unit );
+            if ( ! $post ) {
+                return new WP_Error( 'not_found', 'Alloggio non trovato per questa unità.', array( 'status' => 404 ) );
+            }
+
+            $acf = function_exists( 'get_fields' ) ? ( get_fields( $post->ID ) ?: array() ) : array();
+
+            $prezzo_base      = floatval( $acf['prezzo_notte']     ?? 0 );
+            $ospiti_base      = intval(   $acf['ospiti_base']      ?? 2 );
+            $ospiti_massimi   = intval(   $acf['ospiti_massimi']   ?? 10 );
+            $extra_per_ospite = floatval( $acf['extra_per_ospite'] ?? 0 );
+            $min_notti        = intval(   $acf['min_notti']        ?? 1 );
+            $max_notti        = intval(   $acf['max_notti']        ?? 365 );
+            // Legge tariffe dal meta custom (gestito dalla pagina Tariffario)
+            $tariffe_json = get_post_meta( $post->ID, 'lemura_tariffe', true );
+            $tariffe      = $tariffe_json ? json_decode( $tariffe_json, true ) : array();
+
+            $notti = round( ( strtotime( $checkout ) - strtotime( $checkin ) ) / 86400 );
+
+            // Validazioni
+            $errori = array();
+            if ( $ospiti > $ospiti_massimi ) {
+                $errori[] = "Questo alloggio accetta massimo {$ospiti_massimi} ospiti.";
+            }
+            if ( $notti < $min_notti ) {
+                $errori[] = "Soggiorno minimo: {$min_notti} nott" . ( $min_notti === 1 ? 'e' : 'i' ) . '.';
+            }
+            if ( $notti > $max_notti ) {
+                $errori[] = "Soggiorno massimo: {$max_notti} notti.";
+            }
+
+            // Calcolo prezzo notte per notte
+            $extra_notte = max( 0, $ospiti - $ospiti_base ) * $extra_per_ospite;
+            $breakdown   = array();
+            $totale      = 0.0;
+
+            $current = strtotime( $checkin );
+            $end     = strtotime( $checkout );
+
+            while ( $current < $end ) {
+                $data_str = date( 'Y-m-d', $current );
+                $rata     = lemura_prezzo_per_notte( $data_str, $prezzo_base, $tariffe );
+
+                $totale_notte = $rata['prezzo'] + $extra_notte;
+                $totale      += $totale_notte;
+
+                $breakdown[] = array(
+                    'data'         => $data_str,
+                    'prezzo_base'  => $rata['prezzo'],
+                    'extra_ospiti' => $extra_notte,
+                    'totale_notte' => $totale_notte,
+                    'stagione'     => $rata['stagione'],
+                );
+
+                $current = strtotime( '+1 day', $current );
+            }
+
+            return rest_ensure_response( array(
+                'unit'              => $unit,
+                'checkin'           => $checkin,
+                'checkout'          => $checkout,
+                'ospiti'            => $ospiti,
+                'ospiti_base'       => $ospiti_base,
+                'ospiti_massimi'    => $ospiti_massimi,
+                'extra_per_ospite'  => $extra_per_ospite,
+                'min_notti'         => $min_notti,
+                'max_notti'         => $max_notti,
+                'notti'             => (int) $notti,
+                'prezzo_base_notte' => $prezzo_base,
+                'extra_notte'       => $extra_notte,
+                'breakdown'         => $breakdown,
+                'totale'            => round( $totale, 2 ),
+                'valido'            => empty( $errori ),
+                'errori'            => $errori,
+            ) );
+        },
+    ) );
+
+} );
+
+// ============================================================
+// 16. CALENDARIO ADMIN — FullCalendar con tutte le prenotazioni
 // ============================================================
 add_action( 'admin_menu', function () {
     add_submenu_page(
@@ -1582,7 +1854,497 @@ add_action( 'updated_post_meta', function ( $meta_id, $post_id, $meta_key, $new_
 }, 10, 4 );
 
 // ============================================================
-// 18. OTTIMIZZAZIONI
+// 18. TARIFFARIO ADMIN — Pagina custom gestione prezzi stagionali
+// ============================================================
+
+add_action( 'admin_menu', function () {
+    add_submenu_page(
+        'edit.php?post_type=alloggio',
+        'Tariffario',
+        '💰 Tariffario',
+        'manage_options',
+        'lemura-tariffario',
+        'lemura_tariffario_page'
+    );
+} );
+
+// AJAX: salva tariffe per un alloggio
+add_action( 'wp_ajax_lemura_save_tariffe', function () {
+    check_ajax_referer( 'lemura_tariffario', 'nonce' );
+    if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorized' );
+
+    $post_id = absint( $_POST['post_id'] ?? 0 );
+    $raw     = json_decode( stripslashes( $_POST['tariffe'] ?? '[]' ), true );
+
+    if ( ! $post_id ) {
+        wp_send_json_error( 'ID alloggio mancante.' );
+    }
+
+    // ── Parametri alloggio ───────────────────────────────────
+    $params_raw = isset( $_POST['params'] ) ? json_decode( stripslashes( $_POST['params'] ), true ) : null;
+    if ( is_array( $params_raw ) ) {
+        $numeric_fields = array( 'ospiti_base', 'ospiti_massimi', 'extra_per_ospite', 'min_notti', 'max_notti', 'prezzo_notte' );
+        foreach ( $numeric_fields as $f ) {
+            if ( isset( $params_raw[ $f ] ) && $params_raw[ $f ] !== '' ) {
+                update_post_meta( $post_id, $f, round( floatval( $params_raw[ $f ] ), 2 ) );
+            }
+        }
+        if ( isset( $params_raw['unit_id'] ) ) {
+            update_post_meta( $post_id, 'unit_id', sanitize_text_field( $params_raw['unit_id'] ) );
+        }
+    }
+
+    // ── Tariffe stagionali ───────────────────────────────────
+    $clean = array();
+    foreach ( (array) $raw as $t ) {
+        if ( empty( $t['data_inizio'] ) || empty( $t['data_fine'] ) ) continue;
+        $clean[] = array(
+            'nome'        => sanitize_text_field( $t['nome']        ?? '' ),
+            'data_inizio' => sanitize_text_field( $t['data_inizio'] ?? '' ),
+            'data_fine'   => sanitize_text_field( $t['data_fine']   ?? '' ),
+            'prezzo_notte'=> round( floatval( $t['prezzo_notte'] ?? 0 ), 2 ),
+            'colore'      => preg_match( '/^#[0-9a-fA-F]{6}$/', $t['colore'] ?? '' ) ? $t['colore'] : '#3b82f6',
+        );
+    }
+
+    update_post_meta( $post_id, 'lemura_tariffe', wp_json_encode( $clean ) );
+    wp_send_json_success( array( 'message' => 'Dati salvati con successo!', 'count' => count( $clean ) ) );
+} );
+
+function lemura_tariffario_page() {
+    $alloggi = get_posts( array(
+        'post_type'   => 'alloggio',
+        'post_status' => 'publish',
+        'numberposts' => -1,
+        'orderby'     => 'menu_order',
+        'order'       => 'ASC',
+    ) );
+
+    if ( empty( $alloggi ) ) {
+        echo '<div class="wrap"><h1>Tariffario</h1><p>Nessun alloggio trovato.</p></div>';
+        return;
+    }
+
+    $nonce        = wp_create_nonce( 'lemura_tariffario' );
+    $alloggi_data = array();
+
+    foreach ( $alloggi as $post ) {
+        $tipo = get_post_meta( $post->ID, 'tipo', true );
+        if ( $tipo === 'spa' ) continue; // Spa non ha tariffe notte
+        $tariffe_json = get_post_meta( $post->ID, 'lemura_tariffe', true );
+        $tariffe      = $tariffe_json ? json_decode( $tariffe_json, true ) : array();
+        $alloggi_data[] = array(
+            'id'               => $post->ID,
+            'title'            => get_the_title( $post->ID ),
+            'unit_id'          => get_post_meta( $post->ID, 'unit_id', true ) ?: '',
+            'prezzo'           => get_post_meta( $post->ID, 'prezzo_notte', true ) ?: '',
+            'ospiti_base'      => get_post_meta( $post->ID, 'ospiti_base', true ) ?: '2',
+            'ospiti_massimi'   => get_post_meta( $post->ID, 'ospiti_massimi', true ) ?: '',
+            'extra_per_ospite' => get_post_meta( $post->ID, 'extra_per_ospite', true ) ?: '',
+            'min_notti'        => get_post_meta( $post->ID, 'min_notti', true ) ?: '',
+            'max_notti'        => get_post_meta( $post->ID, 'max_notti', true ) ?: '',
+            'tariffe'          => $tariffe ?: array(),
+        );
+    }
+
+    $json = wp_json_encode( $alloggi_data );
+    $ajax = admin_url( 'admin-ajax.php' );
+    ?>
+    <div class="wrap" id="lmt-wrap">
+    <div class="lmt-header">
+        <div class="lmt-header-inner">
+            <h1>💰 Tariffario</h1>
+            <p>Gestisci parametri e prezzi stagionali per ogni struttura</p>
+        </div>
+        <div id="lmt-toast" class="lmt-toast" style="display:none"></div>
+    </div>
+
+    <style>
+    #lmt-wrap { max-width: 1000px; }
+    .lmt-header { background: #1a1a1a; border-radius: 10px; padding: 24px 32px; margin-bottom: 28px; display: flex; align-items: center; justify-content: space-between; }
+    .lmt-header h1 { color: #e8d5b0; font-size: 22px; margin: 0; font-weight: 600; }
+    .lmt-header p  { color: #9a8c7a; margin: 4px 0 0; font-size: 13px; }
+
+    /* Tabs */
+    .lmt-tabs { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
+    .lmt-tab  { padding: 10px 20px; border-radius: 20px; border: 2px solid #e0d6c8; background: #fff; cursor: pointer; font-size: 14px; font-weight: 500; color: #555; transition: all .2s; }
+    .lmt-tab:hover   { border-color: #c8b89a; color: #333; }
+    .lmt-tab.active  { background: #1a1a1a; border-color: #1a1a1a; color: #e8d5b0; }
+
+    /* Panel */
+    .lmt-panel { display: none; }
+    .lmt-panel.active { display: block; }
+
+    /* Cards container */
+    .lmt-card { background: #fff; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,.08); padding: 24px; margin-bottom: 20px; }
+    .lmt-card-title { font-size: 15px; font-weight: 600; color: #1a1a1a; margin: 0 0 18px; display: flex; align-items: center; gap: 8px; }
+
+    /* Tariffe list */
+    .lmt-tariffe-list { display: flex; flex-direction: column; gap: 10px; }
+    .lmt-tariffa-item { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 8px; border: 1px solid #f0ece6; background: #fdfaf7; position: relative; border-left-width: 4px; }
+    .lmt-tariffa-info { flex: 1; }
+    .lmt-tariffa-nome { font-weight: 600; font-size: 14px; color: #1a1a1a; }
+    .lmt-tariffa-date { font-size: 12px; color: #777; margin-top: 2px; }
+    .lmt-tariffa-prezzo { font-size: 18px; font-weight: 700; color: #1a1a1a; white-space: nowrap; }
+    .lmt-tariffa-prezzo span { font-size: 12px; font-weight: 400; color: #888; }
+    .lmt-tariffa-actions { display: flex; gap: 6px; }
+    .lmt-btn-icon { width: 32px; height: 32px; border-radius: 6px; border: 1px solid #e0d6c8; background: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; transition: all .15s; }
+    .lmt-btn-icon:hover { background: #f5f0ea; }
+    .lmt-btn-icon.delete:hover { background: #fee2e2; border-color: #fca5a5; }
+    .lmt-empty { text-align: center; padding: 32px; color: #aaa; font-size: 14px; }
+
+    /* Form */
+    .lmt-form { background: #f8f5f0; border-radius: 8px; padding: 20px; margin-top: 16px; border: 1px dashed #d4c9b8; }
+    .lmt-form-title { font-weight: 600; font-size: 14px; margin: 0 0 16px; color: #333; }
+    .lmt-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .lmt-form-group { display: flex; flex-direction: column; gap: 5px; }
+    .lmt-form-group.full { grid-column: 1 / -1; }
+    .lmt-form-group label { font-size: 12px; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: .04em; }
+    .lmt-form-group input[type=text],
+    .lmt-form-group input[type=date],
+    .lmt-form-group input[type=number] { border: 1px solid #ddd; border-radius: 6px; padding: 8px 10px; font-size: 14px; background: #fff; width: 100%; box-sizing: border-box; }
+    .lmt-form-group input:focus { outline: none; border-color: #c8b89a; box-shadow: 0 0 0 2px rgba(200,184,154,.2); }
+    .lmt-color-row { display: flex; align-items: center; gap: 10px; }
+    .lmt-color-row input[type=color] { width: 36px; height: 36px; padding: 2px; border-radius: 6px; border: 1px solid #ddd; cursor: pointer; }
+    .lmt-form-actions { display: flex; gap: 10px; margin-top: 16px; align-items: center; }
+
+    /* Buttons */
+    .lmt-btn { padding: 9px 18px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: all .15s; }
+    .lmt-btn-primary { background: #1a1a1a; color: #e8d5b0; }
+    .lmt-btn-primary:hover { background: #333; }
+    .lmt-btn-secondary { background: #fff; color: #555; border: 1px solid #ddd; }
+    .lmt-btn-secondary:hover { background: #f5f5f5; }
+    .lmt-btn-add { background: #f8f5f0; color: #555; border: 2px dashed #c8b89a; width: 100%; padding: 12px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; transition: all .15s; }
+    .lmt-btn-add:hover { background: #f0ebe3; color: #333; }
+    .lmt-btn-save { background: #22c55e; color: #fff; padding: 11px 28px; font-size: 14px; }
+    .lmt-btn-save:hover { background: #16a34a; }
+    .lmt-btn-save:disabled { background: #86efac; cursor: not-allowed; }
+
+    /* Toast */
+    .lmt-toast { position: fixed; top: 40px; right: 20px; background: #1a1a1a; color: #fff; padding: 12px 20px; border-radius: 8px; font-size: 13px; z-index: 9999; box-shadow: 0 4px 12px rgba(0,0,0,.2); }
+    .lmt-toast.success { background: #22c55e; }
+    .lmt-toast.error   { background: #ef4444; }
+
+    /* Save bar */
+    .lmt-save-bar { display: flex; align-items: center; justify-content: space-between; margin-top: 20px; padding: 16px 20px; background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+    .lmt-save-bar p { margin: 0; font-size: 13px; color: #777; }
+
+    /* Params card */
+    .lmt-params-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+    @media (max-width: 700px) { .lmt-params-grid { grid-template-columns: 1fr 1fr; } }
+    .lmt-param-group { display: flex; flex-direction: column; gap: 5px; }
+    .lmt-param-group.full { grid-column: 1 / -1; }
+    .lmt-param-group label { font-size: 11px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: .05em; }
+    .lmt-param-group input[type=text],
+    .lmt-param-group input[type=number] { border: 1px solid #e0d6c8; border-radius: 6px; padding: 9px 11px; font-size: 14px; background: #fdfaf7; width: 100%; box-sizing: border-box; color: #1a1a1a; }
+    .lmt-param-group input:focus { outline: none; border-color: #c8b89a; box-shadow: 0 0 0 2px rgba(200,184,154,.2); background: #fff; }
+    .lmt-param-hint { font-size: 11px; color: #aaa; margin-top: 2px; }
+    .lmt-section-divider { border: none; border-top: 1px solid #f0ece6; margin: 24px 0 20px; }
+    </style>
+
+    <div class="lmt-tabs" id="lmt-tabs"></div>
+    <div id="lmt-panels"></div>
+
+    <script>
+    (function() {
+        var alloggi  = <?= $json ?>;
+        var ajaxUrl  = '<?= esc_js( $ajax ) ?>';
+        var nonce    = '<?= esc_js( $nonce ) ?>';
+        var state    = {}; // { postId: [ tariffe ] }
+        var params   = {}; // { postId: { prezzo, ospiti_base, ... } }
+        var editing  = {}; // { postId: index|null }
+
+        // Init state
+        alloggi.forEach(function(a) {
+            state[a.id]   = JSON.parse(JSON.stringify(a.tariffe));
+            editing[a.id] = null;
+            params[a.id]  = {
+                unit_id:          a.unit_id          || '',
+                prezzo_notte:     a.prezzo            || '',
+                ospiti_base:      a.ospiti_base       || '2',
+                ospiti_massimi:   a.ospiti_massimi    || '',
+                extra_per_ospite: a.extra_per_ospite  || '',
+                min_notti:        a.min_notti         || '',
+                max_notti:        a.max_notti         || '',
+            };
+        });
+
+        function escHtml(s) {
+            return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+
+        function fmtDate(d) {
+            if (!d) return '—';
+            var p = d.split('-');
+            return p[2] + '/' + p[1] + '/' + p[0];
+        }
+
+        function showToast(msg, type) {
+            var t = document.getElementById('lmt-toast');
+            t.textContent = msg;
+            t.className = 'lmt-toast ' + (type || '');
+            t.style.display = 'block';
+            setTimeout(function() { t.style.display = 'none'; }, 3000);
+        }
+
+        // ── Render tabs ───────────────────────────────────────
+        function renderTabs() {
+            var tabs = document.getElementById('lmt-tabs');
+            tabs.innerHTML = '';
+            alloggi.forEach(function(a, i) {
+                var btn = document.createElement('button');
+                btn.className = 'lmt-tab' + (i === 0 ? ' active' : '');
+                btn.textContent = a.title;
+                btn.dataset.id = a.id;
+                btn.onclick = function() {
+                    document.querySelectorAll('.lmt-tab').forEach(function(b){ b.classList.remove('active'); });
+                    btn.classList.add('active');
+                    document.querySelectorAll('.lmt-panel').forEach(function(p){ p.classList.remove('active'); });
+                    document.getElementById('panel-' + a.id).classList.add('active');
+                };
+                tabs.appendChild(btn);
+            });
+        }
+
+        // ── Render all panels ─────────────────────────────────
+        function renderPanels() {
+            var wrap = document.getElementById('lmt-panels');
+            wrap.innerHTML = '';
+            alloggi.forEach(function(a, i) {
+                var div = document.createElement('div');
+                div.className = 'lmt-panel' + (i === 0 ? ' active' : '');
+                div.id = 'panel-' + a.id;
+                wrap.appendChild(div);
+                renderPanel(a.id);
+            });
+        }
+
+        // ── Render params card ────────────────────────────────
+        function renderParamsCard(postId) {
+            var p = params[postId];
+            var html = '<div class="lmt-card">';
+            html += '<div class="lmt-card-title">⚙️ Parametri alloggio</div>';
+            html += '<div class="lmt-params-grid">';
+
+            html += '<div class="lmt-param-group">';
+            html += '<label>Unit ID (iCal/booking)</label>';
+            html += '<input type="text" id="p-unit-' + postId + '" placeholder="es. 12345" value="' + escHtml(p.unit_id) + '" oninput="LMT.paramChange(' + postId + ',\'unit_id\',this.value)">';
+            html += '<div class="lmt-param-hint">Codice unità per iCal sync</div></div>';
+
+            html += '<div class="lmt-param-group">';
+            html += '<label>Prezzo base/notte (€)</label>';
+            html += '<input type="number" id="p-prezzo-' + postId + '" min="0" step="0.5" placeholder="es. 120" value="' + escHtml(p.prezzo_notte) + '" oninput="LMT.paramChange(' + postId + ',\'prezzo_notte\',this.value)">';
+            html += '<div class="lmt-param-hint">Usato quando nessuna stagione corrisponde</div></div>';
+
+            html += '<div class="lmt-param-group">';
+            html += '<label>Ospiti inclusi nel prezzo</label>';
+            html += '<input type="number" id="p-ospiti-base-' + postId + '" min="1" step="1" placeholder="es. 2" value="' + escHtml(p.ospiti_base) + '" oninput="LMT.paramChange(' + postId + ',\'ospiti_base\',this.value)">';
+            html += '<div class="lmt-param-hint">Ospiti inclusi senza supplemento</div></div>';
+
+            html += '<div class="lmt-param-group">';
+            html += '<label>Ospiti massimi</label>';
+            html += '<input type="number" id="p-ospiti-max-' + postId + '" min="1" step="1" placeholder="es. 4" value="' + escHtml(p.ospiti_massimi) + '" oninput="LMT.paramChange(' + postId + ',\'ospiti_massimi\',this.value)">';
+            html += '<div class="lmt-param-hint">Capacità massima struttura</div></div>';
+
+            html += '<div class="lmt-param-group">';
+            html += '<label>Extra per ospite aggiuntivo (€)</label>';
+            html += '<input type="number" id="p-extra-' + postId + '" min="0" step="0.5" placeholder="es. 20" value="' + escHtml(p.extra_per_ospite) + '" oninput="LMT.paramChange(' + postId + ',\'extra_per_ospite\',this.value)">';
+            html += '<div class="lmt-param-hint">Per notte, per ogni ospite oltre il base</div></div>';
+
+            html += '<div class="lmt-param-group" style="display:flex;flex-direction:row;gap:10px;align-items:flex-end;">';
+            html += '<div style="flex:1"><label>Min notti</label>';
+            html += '<input type="number" id="p-min-' + postId + '" min="1" step="1" placeholder="es. 2" value="' + escHtml(p.min_notti) + '" oninput="LMT.paramChange(' + postId + ',\'min_notti\',this.value)"></div>';
+            html += '<div style="flex:1"><label>Max notti</label>';
+            html += '<input type="number" id="p-max-' + postId + '" min="1" step="1" placeholder="illimitato" value="' + escHtml(p.max_notti) + '" oninput="LMT.paramChange(' + postId + ',\'max_notti\',this.value)"></div>';
+            html += '</div>';
+
+            html += '</div>'; // end params-grid
+            html += '</div>'; // end card
+            return html;
+        }
+
+        // ── Render single panel ───────────────────────────────
+        function renderPanel(postId) {
+            var a    = alloggi.find(function(x){ return x.id === postId; });
+            var div  = document.getElementById('panel-' + postId);
+            var tar  = state[postId];
+            var p    = params[postId];
+
+            var html = renderParamsCard(postId);
+
+            html += '<div class="lmt-card">';
+            html += '<div class="lmt-card-title">🗓 Tariffe stagionali';
+            html += '<span style="margin-left:auto;font-size:12px;font-weight:400;color:#999">Prezzo base: <strong>€' + (parseFloat(p.prezzo_notte)||0).toFixed(0) + '/notte</strong></span>';
+            html += '</div>';
+
+            if (tar.length === 0) {
+                html += '<div class="lmt-empty">Nessuna tariffa stagionale. Il prezzo base verrà usato per tutto l\'anno.</div>';
+            } else {
+                html += '<div class="lmt-tariffe-list">';
+                tar.forEach(function(t, idx) {
+                    var col = t.colore || '#3b82f6';
+                    html += '<div class="lmt-tariffa-item" style="border-left-color:' + col + '">';
+                    html += '<div style="width:10px;height:10px;border-radius:50%;background:' + col + ';flex-shrink:0"></div>';
+                    html += '<div class="lmt-tariffa-info">';
+                    html += '<div class="lmt-tariffa-nome">' + (t.nome || 'Stagione senza nome') + '</div>';
+                    html += '<div class="lmt-tariffa-date">' + fmtDate(t.data_inizio) + ' → ' + fmtDate(t.data_fine) + '</div>';
+                    html += '</div>';
+                    html += '<div class="lmt-tariffa-prezzo">€' + parseFloat(t.prezzo_notte||0).toFixed(0) + '<span>/notte</span></div>';
+                    html += '<div class="lmt-tariffa-actions">';
+                    html += '<button class="lmt-btn-icon" onclick="LMT.edit(' + postId + ',' + idx + ')" title="Modifica">✏️</button>';
+                    html += '<button class="lmt-btn-icon delete" onclick="LMT.remove(' + postId + ',' + idx + ')" title="Elimina">🗑</button>';
+                    html += '</div>';
+                    html += '</div>';
+                });
+                html += '</div>';
+            }
+
+            // Form add/edit
+            html += renderForm(postId);
+
+            html += '</div>';
+
+            // Save bar
+            html += '<div class="lmt-save-bar">';
+            html += '<p>' + tar.length + ' tariffa' + (tar.length !== 1 ? 'e' : '') + ' configurata' + (tar.length !== 1 ? 'e' : '') + ' per <strong>' + a.title + '</strong></p>';
+            html += '<button class="lmt-btn lmt-btn-save" onclick="LMT.save(' + postId + ')">💾 Salva tutto</button>';
+            html += '</div>';
+
+            div.innerHTML = html;
+        }
+
+        function renderForm(postId) {
+            var idx = editing[postId];
+            var tar = state[postId];
+            var t   = (idx !== null && idx !== undefined && tar[idx]) ? tar[idx] : null;
+            var isEdit = t !== null;
+
+            var html = '<div class="lmt-form" id="form-' + postId + '" style="' + (!isEdit && editing[postId] !== -1 ? 'display:none' : '') + '">';
+            html += '<div class="lmt-form-title">' + (isEdit ? '✏️ Modifica tariffa' : '➕ Nuova tariffa stagionale') + '</div>';
+            html += '<div class="lmt-form-grid">';
+            html += '<div class="lmt-form-group full"><label>Nome stagione</label>';
+            html += '<input type="text" id="f-nome-' + postId + '" placeholder="es. Alta stagione, Ferragosto..." value="' + (t ? t.nome : '') + '"></div>';
+            html += '<div class="lmt-form-group"><label>Data inizio</label>';
+            html += '<input type="date" id="f-inizio-' + postId + '" value="' + (t ? t.data_inizio : '') + '"></div>';
+            html += '<div class="lmt-form-group"><label>Data fine (inclusa)</label>';
+            html += '<input type="date" id="f-fine-' + postId + '" value="' + (t ? t.data_fine : '') + '"></div>';
+            html += '<div class="lmt-form-group"><label>Prezzo/notte (€)</label>';
+            html += '<input type="number" id="f-prezzo-' + postId + '" min="0" step="0.5" placeholder="es. 150" value="' + (t ? t.prezzo_notte : '') + '"></div>';
+            html += '<div class="lmt-form-group"><label>Colore etichetta</label>';
+            html += '<div class="lmt-color-row">';
+            html += '<input type="color" id="f-colore-' + postId + '" value="' + (t ? (t.colore||'#3b82f6') : '#3b82f6') + '">';
+            html += '<span style="font-size:12px;color:#888">Colore identificativo della stagione</span>';
+            html += '</div></div>';
+            html += '</div>';
+            html += '<div class="lmt-form-actions">';
+            html += '<button class="lmt-btn lmt-btn-primary" onclick="LMT.confirmEdit(' + postId + ')">' + (isEdit ? 'Aggiorna' : 'Aggiungi') + '</button>';
+            html += '<button class="lmt-btn lmt-btn-secondary" onclick="LMT.cancelEdit(' + postId + ')">Annulla</button>';
+            html += '</div>';
+            html += '</div>';
+
+            if (editing[postId] === null) {
+                html += '<button class="lmt-btn-add" onclick="LMT.showForm(' + postId + ')">+ Aggiungi tariffa stagionale</button>';
+            }
+
+            return html;
+        }
+
+        // ── Public API ────────────────────────────────────────
+        window.LMT = {
+            paramChange: function(postId, field, value) {
+                params[postId][field] = value;
+            },
+            showForm: function(postId) {
+                editing[postId] = -1;
+                renderPanel(postId);
+                document.getElementById('f-nome-' + postId).focus();
+            },
+            edit: function(postId, idx) {
+                editing[postId] = idx;
+                renderPanel(postId);
+                document.getElementById('f-nome-' + postId).focus();
+            },
+            cancelEdit: function(postId) {
+                editing[postId] = null;
+                renderPanel(postId);
+            },
+            remove: function(postId, idx) {
+                if (!confirm('Eliminare questa tariffa?')) return;
+                state[postId].splice(idx, 1);
+                editing[postId] = null;
+                renderPanel(postId);
+            },
+            confirmEdit: function(postId) {
+                var nome    = document.getElementById('f-nome-' + postId).value.trim();
+                var inizio  = document.getElementById('f-inizio-' + postId).value;
+                var fine    = document.getElementById('f-fine-' + postId).value;
+                var prezzo  = parseFloat(document.getElementById('f-prezzo-' + postId).value);
+                var colore  = document.getElementById('f-colore-' + postId).value;
+
+                if (!inizio || !fine || isNaN(prezzo)) {
+                    alert('Compila tutti i campi obbligatori (date e prezzo).');
+                    return;
+                }
+                if (inizio > fine) {
+                    alert('La data di inizio deve essere precedente alla data di fine.');
+                    return;
+                }
+
+                var entry = { nome: nome, data_inizio: inizio, data_fine: fine, prezzo_notte: prezzo, colore: colore };
+                var idx = editing[postId];
+
+                if (idx !== null && idx >= 0 && state[postId][idx]) {
+                    state[postId][idx] = entry;
+                } else {
+                    state[postId].push(entry);
+                }
+
+                editing[postId] = null;
+                renderPanel(postId);
+            },
+            save: function(postId) {
+                var btn = document.querySelector('#panel-' + postId + ' .lmt-btn-save');
+                btn.disabled = true;
+                btn.textContent = '⏳ Salvataggio...';
+
+                var data = new FormData();
+                data.append('action',  'lemura_save_tariffe');
+                data.append('nonce',   nonce);
+                data.append('post_id', postId);
+                data.append('tariffe', JSON.stringify(state[postId]));
+                data.append('params',  JSON.stringify(params[postId]));
+
+                fetch(ajaxUrl, { method: 'POST', body: data })
+                    .then(function(r){ return r.json(); })
+                    .then(function(res) {
+                        btn.disabled = false;
+                        btn.textContent = '💾 Salva tutto';
+                        if (res.success) {
+                            showToast('✅ ' + res.data.message, 'success');
+                            renderPanel(postId);
+                        } else {
+                            showToast('❌ Errore: ' + res.data, 'error');
+                        }
+                    })
+                    .catch(function() {
+                        btn.disabled = false;
+                        btn.textContent = '💾 Salva tutto';
+                        showToast('❌ Errore di rete. Riprova.', 'error');
+                    });
+            }
+        };
+
+        // Boot
+        renderTabs();
+        renderPanels();
+    })();
+    </script>
+    </div>
+    <?php
+}
+
+// ============================================================
+// 19. OTTIMIZZAZIONI
 // ============================================================
 add_filter( 'xmlrpc_enabled', '__return_false' );
 remove_action( 'wp_head', 'wp_generator' );

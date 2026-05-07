@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import useAvailability, { isRangeBlocked } from "../hooks/useAvailability";
-import { submitBooking } from "../lib/wordpress";
+import { submitBooking, getPricing } from "../lib/wordpress";
 
 // ─────────────────────────────────────────────────────────────
 // Costanti
@@ -69,8 +69,29 @@ export default function BookingWidget() {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState(null);
   const [bookingId, setBookingId] = useState(null);
+  const [pricing, setPricing] = useState(null);
+  const [loadingPricing, setLoadingPricing] = useState(false);
 
   const { blocked, loading: loadingCalendar } = useAvailability(unit);
+
+  // Calcola prezzo appena date + ospiti sono pronti e non ci sono errori
+  useEffect(() => {
+    if (!unit || !form.checkin || !form.checkout || form.checkout <= form.checkin) {
+      setPricing(null);
+      return;
+    }
+    if (isRangeBlocked(form.checkin, form.checkout, blocked)) {
+      setPricing(null);
+      return;
+    }
+    let cancelled = false;
+    setLoadingPricing(true);
+    getPricing({ unit, checkin: form.checkin, checkout: form.checkout, ospiti: form.ospiti })
+      .then((data) => { if (!cancelled) setPricing(data); })
+      .catch(() => { if (!cancelled) setPricing(null); })
+      .finally(() => { if (!cancelled) setLoadingPricing(false); });
+    return () => { cancelled = true; };
+  }, [unit, form.checkin, form.checkout, form.ospiti, blocked]);
 
   const handleChange = (e) =>
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -444,6 +465,46 @@ export default function BookingWidget() {
           </p>
         )}
 
+        {/* Stima prezzo */}
+        {nights > 0 && !error && (
+          <div
+            style={{
+              marginTop: "0.75rem",
+              padding: "1rem 1.25rem",
+              borderRadius: "var(--radius)",
+              background: "var(--color-bg-warm, #faf7f4)",
+              border: "1px solid var(--color-border)",
+            }}
+          >
+            {loadingPricing ? (
+              <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--color-muted)" }}>
+                Calcolo prezzo…
+              </p>
+            ) : pricing && !pricing.errori?.length ? (
+              <>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                  <span style={{ fontSize: "0.85rem", color: "var(--color-muted)" }}>Stima totale</span>
+                  <span style={{ fontSize: "1.35rem", fontWeight: 700, color: "var(--color-accent)" }}>
+                    €{pricing.totale}
+                  </span>
+                </div>
+                {pricing.extra_ospiti > 0 && (
+                  <p style={{ margin: "0.3rem 0 0", fontSize: "0.78rem", color: "var(--color-muted)" }}>
+                    Include supplemento ospiti aggiuntivi: €{pricing.extra_ospiti}
+                  </p>
+                )}
+                <p style={{ margin: "0.3rem 0 0", fontSize: "0.75rem", color: "var(--color-muted)" }}>
+                  Prezzo indicativo · {pricing.notti} nott{pricing.notti === 1 ? "e" : "i"} · può variare al momento della conferma
+                </p>
+              </>
+            ) : pricing?.errori?.length ? (
+              <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--color-danger, #dc3545)" }}>
+                ⚠ {pricing.errori[0]}
+              </p>
+            ) : null}
+          </div>
+        )}
+
         <button
           type="button"
           onClick={() => setStep("dati")}
@@ -488,13 +549,144 @@ export default function BookingWidget() {
             fontSize: "0.88rem",
           }}
         >
-          <strong>{UNIT_LABELS[unit]}</strong>
-          {" · "}
-          {fmt(form.checkin)} → {fmt(form.checkout)}
-          {" · "}
-          {nights} nott{nights === 1 ? "e" : "i"}
-          {" · "}
-          {form.ospiti} ospiti
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "0.5rem" }}>
+            <div>
+              <strong>{UNIT_LABELS[unit]}</strong>
+              <br />
+              {fmt(form.checkin)} → {fmt(form.checkout)}
+              {" · "}
+              {nights} nott{nights === 1 ? "e" : "i"}
+              {" · "}
+              {form.ospiti} ospiti
+            </div>
+            {pricing && !pricing.errori?.length && (
+              <div style={{ textAlign: "right" }}>
+                <span style={{ fontSize: "1.2rem", fontWeight: 700, color: "var(--color-accent)" }}>
+                  €{pricing.totale}
+                </span>
+                <div style={{ fontSize: "0.72rem", color: "var(--color-muted)" }}>stima totale</div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <h4
+          style={{ fontFamily: "var(--font-display)", marginBottom: "1.5rem" }}
+        >
+          I tuoi dati
+        </h4>
+
+        <div className="row g-3">
+          <div className="col-md-6">
+            <label style={labelStyle}>Nome completo *</label>
+            <input
+              type="text"
+              name="nome"
+              value={form.nome}
+              onChange={handleChange}
+              required
+              placeholder="Il tuo nome"
+              style={inputStyle}
+            />
+          </div>
+          <div className="col-md-6">
+            <label style={labelStyle}>Email *</label>
+            <input
+              type="email"
+              name="email"
+              value={form.email}
+              onChange={handleChange}
+              required
+              placeholder="email@esempio.com"
+              style={inputStyle}
+            />
+          </div>
+          <div className="col-md-6">
+            <label style={labelStyle}>Telefono</label>
+            <input
+              type="tel"
+              name="telefono"
+              value={form.telefono}
+              onChange={handleChange}
+              placeholder="+39..."
+              style={inputStyle}
+            />
+          </div>
+          <div className="col-12">
+            <label style={labelStyle}>Messaggio (opzionale)</label>
+            <textarea
+              name="messaggio"
+              value={form.messaggio}
+              onChange={handleChange}
+              rows="3"
+              placeholder="Richieste particolari, orario di arrivo previsto…"
+              style={{ ...inputStyle, resize: "vertical" }}
+            />
+          </div>
+        </div>
+
+        {error && (
+          <p
+            style={{
+              color: "var(--color-danger, #dc3545)",
+              fontSize: "0.88rem",
+              marginTop: "1rem",
+            }}
+          >
+            ⚠ {error}
+          </p>
+        )}
+
+        <button
+          type="button"
+          onClick={handleSubmit}
+          disabled={sending}
+          className="btn-bnb btn-bnb-accent mt-3 w-100"
+        >
+          {sending ? "Invio in corso…" : "Invia richiesta"}
+        </button>
+      </div>
+    );
+  }
+
+  // STEP 5 — Successo
+  if (step === "success") {
+    return (
+      <div style={{ ...card, textAlign: "center", padding: "3rem 2rem" }}>
+        <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>✅</div>
+        <h3
+          style={{ fontFamily: "var(--font-display)", marginBottom: "0.75rem" }}
+        >
+          Richiesta inviata!
+        </h3>
+        <p
+          style={{
+            color: "var(--color-muted)",
+            maxWidth: 400,
+            margin: "0 auto 1.5rem",
+          }}
+        >
+          Grazie per la tua richiesta. Ti risponderemo entro 24 ore
+          all'indirizzo <strong>{form.email}</strong>.
+        </p>
+        {bookingId && (
+          <p style={{ fontSize: "0.8rem", color: "var(--color-muted)" }}>
+            Riferimento prenotazione: #{bookingId}
+          </p>
+        )}
+        <button type="button" className="btn-bnb mt-3" onClick={reset}>
+          Nuova richiesta
+        </button>
+      </div>
+    );
+  }
+
+  return null;
+}
+le={{ fontSize: "0.72rem", color: "var(--color-muted)" }}>stima totale</div>
+              </div>
+            )}
+          </div>
         </div>
 
         <h4

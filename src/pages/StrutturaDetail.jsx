@@ -72,6 +72,7 @@ function normalizeSternatia(data) {
   return {
     title: data.title || "Sternatia",
     description: data.description || "",
+    prezzo_notte: data.prezzo_notte || "",
     superficie: data.superficie || "",
     ospiti_max: data.ospiti_max || "",
     servizi: data.servizi || "",
@@ -216,13 +217,13 @@ function CoriglianoDetail({ data }) {
                         <span className="text-muted">{camera.superficie}</span>
                       )}
                       {camera.prezzo_notte && (
-                        <span
-                          style={{
-                            color: "var(--color-accent)",
-                            fontWeight: 600,
-                          }}
-                        >
-                          da €{camera.prezzo_notte}/notte
+                        <span style={{ lineHeight: 1.3 }}>
+                          <span style={{ color: "var(--color-accent)", fontWeight: 700 }}>
+                            €{camera.prezzo_notte} / notte
+                          </span>
+                          <span style={{ display: "block", fontSize: "0.72rem", color: "var(--color-muted)" }}>
+                            prezzo base per due persone
+                          </span>
                         </span>
                       )}
                     </div>
@@ -273,6 +274,22 @@ function CoriglianoDetail({ data }) {
 
 function SternatiaDetail({ data }) {
   const dettagli = [
+    {
+      label: "Prezzo",
+      value: data.prezzo_notte ? data.prezzo_notte : "",
+      render: data.prezzo_notte
+        ? () => (
+            <span style={{ textAlign: "right" }}>
+              <span style={{ color: "var(--color-accent)", fontWeight: 700 }}>
+                €{data.prezzo_notte} / notte
+              </span>
+              <span style={{ display: "block", fontSize: "0.72rem", color: "var(--color-muted)" }}>
+                prezzo base per due persone
+              </span>
+            </span>
+          )
+        : null,
+    },
     { label: "Superficie", value: data.superficie },
     { label: "Ospiti", value: data.ospiti_max ? `fino a ${data.ospiti_max}` : "" },
     { label: "Check-in", value: data.checkin_time },
@@ -366,11 +383,11 @@ function SternatiaDetail({ data }) {
                   {dettagli.map((d) => (
                     <div
                       key={d.label}
-                      className="d-flex justify-content-between py-2"
+                      className="d-flex justify-content-between align-items-center py-2"
                       style={{ borderBottom: "1px solid var(--color-border)" }}
                     >
                       <span className="text-muted">{d.label}</span>
-                      <strong>{d.value}</strong>
+                      {d.render ? d.render() : <strong>{d.value}</strong>}
                     </div>
                   ))}
                 </div>
@@ -444,6 +461,35 @@ export default function StrutturaDetail() {
 
   const isCorigliano = slug === "corigliano";
   const isSternatia = slug === "sternatia";
+
+  const { data: rawData, loading } = useWP(
+    () => (isCorigliano ? getCorigliano() : isSternatia ? getSternatia() : Promise.resolve(null)),
+    [slug]
+  );
+
+  if (loading) return <Loader />;
+
+  if (!isCorigliano && !isSternatia) {
+    return (
+      <div className="section-padding text-center">
+        <h2>Struttura non trovata</h2>
+        <Link to="/strutture" className="btn-bnb mt-3">
+          ← Torna alle strutture
+        </Link>
+      </div>
+    );
+  }
+
+  if (isCorigliano) {
+    const data = normalizeCorigliano(rawData);
+    const rooms = data.rooms.length > 0 ? data.rooms : PLACEHOLDER_CORIGLIANO.rooms;
+    return <CoriglianoDetail data={{ rooms }} />;
+  }
+
+  const data = normalizeSternatia(rawData) || PLACEHOLDER_STERNATIA;
+  return <SternatiaDetail data={data} />;
+}
+ "sternatia";
 
   const { data: rawData, loading } = useWP(
     () => (isCorigliano ? getCorigliano() : isSternatia ? getSternatia() : Promise.resolve(null)),
