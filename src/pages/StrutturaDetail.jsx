@@ -90,7 +90,9 @@ function CoriglianoDetail({ data }) {
 
   return (
     <>
-      <div style={{ position: "relative", height: "420px", overflow: "hidden" }}>
+      <div
+        style={{ position: "relative", height: "420px", overflow: "hidden" }}
+      >
         <img
           src={
             rooms[0]?.featured_image ||
@@ -147,7 +149,9 @@ function CoriglianoDetail({ data }) {
 
           <div className="row mb-5">
             <div className="col-lg-8">
-              <span className="section-label">Dimora storica nel borgo medievale</span>
+              <span className="section-label">
+                Dimora storica nel borgo medievale
+              </span>
               <hr className="section-divider" style={{ marginTop: "0.8rem" }} />
               <p style={{ fontSize: "1.05rem", lineHeight: 1.8 }}>
                 Corigliano d'Otranto è uno dei borghi più suggestivi del
@@ -211,17 +215,30 @@ function CoriglianoDetail({ data }) {
                       style={{ fontSize: "0.85rem" }}
                     >
                       {camera.ospiti_max && (
-                        <span className="text-muted">{camera.ospiti_max} ospiti</span>
+                        <span className="text-muted">
+                          {camera.ospiti_max} ospiti
+                        </span>
                       )}
                       {camera.superficie && (
                         <span className="text-muted">{camera.superficie}</span>
                       )}
                       {camera.prezzo_notte && (
                         <span style={{ lineHeight: 1.3 }}>
-                          <span style={{ color: "var(--color-accent)", fontWeight: 700 }}>
+                          <span
+                            style={{
+                              color: "var(--color-accent)",
+                              fontWeight: 700,
+                            }}
+                          >
                             €{camera.prezzo_notte} / notte
                           </span>
-                          <span style={{ display: "block", fontSize: "0.72rem", color: "var(--color-muted)" }}>
+                          <span
+                            style={{
+                              display: "block",
+                              fontSize: "0.72rem",
+                              color: "var(--color-muted)",
+                            }}
+                          >
                             prezzo base per due persone
                           </span>
                         </span>
@@ -283,7 +300,13 @@ function SternatiaDetail({ data }) {
               <span style={{ color: "var(--color-accent)", fontWeight: 700 }}>
                 €{data.prezzo_notte} / notte
               </span>
-              <span style={{ display: "block", fontSize: "0.72rem", color: "var(--color-muted)" }}>
+              <span
+                style={{
+                  display: "block",
+                  fontSize: "0.72rem",
+                  color: "var(--color-muted)",
+                }}
+              >
                 prezzo base per due persone
               </span>
             </span>
@@ -291,7 +314,10 @@ function SternatiaDetail({ data }) {
         : null,
     },
     { label: "Superficie", value: data.superficie },
-    { label: "Ospiti", value: data.ospiti_max ? `fino a ${data.ospiti_max}` : "" },
+    {
+      label: "Ospiti",
+      value: data.ospiti_max ? `fino a ${data.ospiti_max}` : "",
+    },
     { label: "Check-in", value: data.checkin_time },
     { label: "Check-out", value: data.checkout_time },
   ].filter((d) => d.value);
@@ -299,12 +325,24 @@ function SternatiaDetail({ data }) {
   const caratteristiche = Array.isArray(data.servizi)
     ? data.servizi.filter(Boolean)
     : typeof data.servizi === "string" && data.servizi
-    ? data.servizi.split(",").map((s) => s.trim()).filter(Boolean)
-    : ["Cortile privato", "Cucina attrezzata", "Camino", "Wi-Fi", "3 camere da letto", "2 bagni"];
+      ? data.servizi
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean)
+      : [
+          "Cortile privato",
+          "Cucina attrezzata",
+          "Camino",
+          "Wi-Fi",
+          "3 camere da letto",
+          "2 bagni",
+        ];
 
   return (
     <>
-      <div style={{ position: "relative", height: "420px", overflow: "hidden" }}>
+      <div
+        style={{ position: "relative", height: "420px", overflow: "hidden" }}
+      >
         <img
           src={data.featured_image}
           alt={data.title}
@@ -358,7 +396,9 @@ function SternatiaDetail({ data }) {
 
           <div className="row mb-5">
             <div className="col-lg-8">
-              <span className="section-label">Dimora privata nella Grecìa Salentina</span>
+              <span className="section-label">
+                Dimora privata nella Grecìa Salentina
+              </span>
               <hr className="section-divider" style={{ marginTop: "0.8rem" }} />
               <p style={{ fontSize: "1.05rem", lineHeight: 1.8 }}>
                 {data.description}
@@ -434,8 +474,8 @@ function SternatiaDetail({ data }) {
                   {data.gallery.map((img, i) => (
                     <div key={i} className={i === 0 ? "col-12" : "col-6"}>
                       <img
-                        src={img}
-                        alt={`${data.title} ${i + 1}`}
+                        src={img.url || img}
+                        alt={img.alt || `${data.title} ${i + 1}`}
                         className="img-bnb w-100"
                         style={{
                           aspectRatio: i === 0 ? "16/9" : "1",
@@ -463,8 +503,13 @@ export default function StrutturaDetail() {
   const isSternatia = slug === "sternatia";
 
   const { data: rawData, loading } = useWP(
-    () => (isCorigliano ? getCorigliano() : isSternatia ? getSternatia() : Promise.resolve(null)),
-    [slug]
+    () =>
+      isCorigliano
+        ? getCorigliano()
+        : isSternatia
+          ? getSternatia()
+          : Promise.resolve(null),
+    [slug],
   );
 
   if (loading) return <Loader />;
@@ -482,7 +527,8 @@ export default function StrutturaDetail() {
 
   if (isCorigliano) {
     const data = normalizeCorigliano(rawData);
-    const rooms = data.rooms.length > 0 ? data.rooms : PLACEHOLDER_CORIGLIANO.rooms;
+    const rooms =
+      data.rooms.length > 0 ? data.rooms : PLACEHOLDER_CORIGLIANO.rooms;
     return <CoriglianoDetail data={{ rooms }} />;
   }
 

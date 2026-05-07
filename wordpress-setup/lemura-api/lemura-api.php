@@ -159,13 +159,7 @@ add_action( 'acf/init', function () {
                 'placeholder' => 'es. 10:00',
             ),
 
-            array(
-                'key'           => 'field_gallery_alloggio',
-                'label'         => 'Galleria foto',
-                'name'          => 'gallery',
-                'type'          => 'gallery',
-                'return_format' => 'array',
-            ),
+            // gallery rimossa da ACF (ora gestita con meta box custom — vedi sezione 19)
 
             // ── Tariffario ──────────────────────────────────────
             array(
@@ -315,15 +309,22 @@ function lemura_format_alloggio( $post ) {
         }
     }
 
-    // Galleria ACF
-    $gallery = array();
-    if ( ! empty( $acf['gallery'] ) && is_array( $acf['gallery'] ) ) {
-        foreach ( $acf['gallery'] as $img ) {
+    // Galleria custom (meta box nativa WP — array di attachment ID)
+    $gallery     = array();
+    $gallery_ids = get_post_meta( $post->ID, '_lemura_gallery', true );
+    if ( ! empty( $gallery_ids ) ) {
+        $ids = is_array( $gallery_ids ) ? $gallery_ids : json_decode( $gallery_ids, true );
+        foreach ( (array) $ids as $att_id ) {
+            $att_id = absint( $att_id );
+            if ( ! $att_id ) continue;
+            $src = wp_get_attachment_image_src( $att_id, 'large' );
+            if ( ! $src ) continue;
+            $alt       = get_post_meta( $att_id, '_wp_attachment_image_alt', true );
             $gallery[] = array(
-                'url'    => isset( $img['url'] )    ? $img['url']    : '',
-                'alt'    => isset( $img['alt'] )    ? $img['alt']    : get_the_title( $post->ID ),
-                'width'  => isset( $img['width'] )  ? $img['width']  : null,
-                'height' => isset( $img['height'] ) ? $img['height'] : null,
+                'url'    => $src[0],
+                'width'  => $src[1],
+                'height' => $src[2],
+                'alt'    => $alt ? $alt : get_the_title( $post->ID ),
             );
         }
     }
@@ -2344,7 +2345,145 @@ function lemura_tariffario_page() {
 }
 
 // ============================================================
-// 19. OTTIMIZZAZIONI
+// 19. GALLERY CUSTOM — Meta box nativa WordPress (no ACF Pro)
+// ============================================================
+
+// Registra la meta box nell'editor alloggio
+add_action( 'add_meta_boxes', function () {
+    add_meta_box(
+        'lemura_gallery',
+        '🖼️ Galleria foto',
+        'lemura_gallery_meta_box_html',
+        'alloggio',
+        'normal',
+        'default'
+    );
+} );
+
+// Rende il markup della meta box
+function lemura_gallery_meta_box_html( $post ) {
+    wp_nonce_field( 'lemura_save_gallery', 'lemura_gallery_nonce' );
+    $ids_raw = get_post_meta( $post->ID, '_lemura_gallery', true );
+    $ids     = array();
+    if ( ! empty( $ids_raw ) ) {
+        $ids = is_array( $ids_raw ) ? $ids_raw : json_decode( $ids_raw, true );
+        $ids = array_filter( array_map( 'absint', (array) $ids ) );
+    }
+    ?>
+    <div id="lemura-gallery-wrap">
+        <input type="hidden" id="lemura-gallery-ids" name="lemura_gallery_ids"
+               value="<?php echo esc_attr( implode( ',', $ids ) ); ?>">
+
+        <div id="lemura-gallery-preview" style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
+            <?php foreach ( $ids as $att_id ) :
+                $thumb = wp_get_attachment_image_url( $att_id, 'thumbnail' );
+                if ( ! $thumb ) continue; ?>
+                <div class="lgal-item" data-id="<?php echo $att_id; ?>"
+                     style="position:relative;width:90px;height:90px;border-radius:6px;overflow:hidden;border:2px solid #e0d6c8;cursor:grab;">
+                    <img src="<?php echo esc_url( $thumb ); ?>"
+                         style="width:100%;height:100%;object-fit:cover;display:block;">
+                    <button type="button" class="lgal-remove"
+                            style="position:absolute;top:3px;right:3px;background:#1a1a1a;color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:12px;line-height:20px;text-align:center;cursor:pointer;padding:0;">✕</button>
+                </div>
+            <?php endforeach; ?>
+        </div>
+
+        <button type="button" id="lemura-gallery-add"
+                style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:#1a1a1a;color:#e8d5b0;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;">
+            ＋ Aggiungi foto
+        </button>
+        <p style="color:#888;font-size:12px;margin-top:8px;">
+            Puoi selezionare più immagini contemporaneamente. Trascina per riordinare.
+        </p>
+    </div>
+
+    <script>
+    (function($){
+        // Apri Media Uploader
+        $('#lemura-gallery-add').on('click', function(){
+            var frame = wp.media({
+                title   : 'Seleziona immagini galleria',
+                button  : { text: 'Aggiungi alla galleria' },
+                multiple: true
+            });
+            frame.on('select', function(){
+                var selection = frame.state().get('selection');
+                selection.each(function(attachment){
+                    var id    = attachment.get('id');
+                    var thumb = attachment.get('sizes') && attachment.get('sizes').thumbnail
+                                ? attachment.get('sizes').thumbnail.url
+                                : attachment.get('url');
+                    // Evita duplicati
+                    if ( $('#lemura-gallery-preview .lgal-item[data-id="'+id+'"]').length ) return;
+                    var item = $('<div class="lgal-item" data-id="'+id+'" style="position:relative;width:90px;height:90px;border-radius:6px;overflow:hidden;border:2px solid #e0d6c8;cursor:grab;">' +
+                        '<img src="'+thumb+'" style="width:100%;height:100%;object-fit:cover;display:block;">' +
+                        '<button type="button" class="lgal-remove" style="position:absolute;top:3px;right:3px;background:#1a1a1a;color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:12px;line-height:20px;text-align:center;cursor:pointer;padding:0;">✕</button>' +
+                        '</div>');
+                    $('#lemura-gallery-preview').append(item);
+                });
+                updateIds();
+            });
+            frame.open();
+        });
+
+        // Rimuovi immagine
+        $(document).on('click', '.lgal-remove', function(){
+            $(this).closest('.lgal-item').remove();
+            updateIds();
+        });
+
+        // Aggiorna campo hidden con lista ID ordinata
+        function updateIds(){
+            var ids = [];
+            $('#lemura-gallery-preview .lgal-item').each(function(){
+                ids.push($(this).data('id'));
+            });
+            $('#lemura-gallery-ids').val(ids.join(','));
+        }
+
+        // Drag & drop per riordinare (usando l'API jQuery UI già caricata in WP)
+        if ( typeof $.fn.sortable !== 'undefined' ) {
+            $('#lemura-gallery-preview').sortable({
+                items      : '.lgal-item',
+                cursor     : 'grabbing',
+                placeholder: 'lgal-placeholder',
+                update     : function(){ updateIds(); }
+            });
+        }
+    })(jQuery);
+    </script>
+    <?php
+}
+
+// Enqueue Media Uploader solo nell'editor degli alloggi
+add_action( 'admin_enqueue_scripts', function ( $hook ) {
+    global $post;
+    if ( ( $hook === 'post.php' || $hook === 'post-new.php' )
+         && isset( $post ) && $post->post_type === 'alloggio' ) {
+        wp_enqueue_media();
+        wp_enqueue_script( 'jquery-ui-sortable' );
+    }
+} );
+
+// Salva la gallery al salvataggio del post
+add_action( 'save_post_alloggio', function ( $post_id ) {
+    // Controlli di sicurezza standard
+    if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) return;
+    if ( ! current_user_can( 'edit_post', $post_id ) ) return;
+    if ( ! isset( $_POST['lemura_gallery_nonce'] )
+         || ! wp_verify_nonce( $_POST['lemura_gallery_nonce'], 'lemura_save_gallery' ) ) return;
+
+    $raw = isset( $_POST['lemura_gallery_ids'] ) ? sanitize_text_field( $_POST['lemura_gallery_ids'] ) : '';
+    if ( $raw === '' ) {
+        delete_post_meta( $post_id, '_lemura_gallery' );
+        return;
+    }
+    $ids = array_values( array_filter( array_map( 'absint', explode( ',', $raw ) ) ) );
+    update_post_meta( $post_id, '_lemura_gallery', wp_json_encode( $ids ) );
+} );
+
+// ============================================================
+// 20. OTTIMIZZAZIONI
 // ============================================================
 add_filter( 'xmlrpc_enabled', '__return_false' );
 remove_action( 'wp_head', 'wp_generator' );
