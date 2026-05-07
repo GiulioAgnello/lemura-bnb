@@ -15,7 +15,7 @@ export default function Header() {
     <nav className="navbar navbar-expand-lg navbar-bnb sticky-top">
       <div className="container">
         <Link className="navbar-brand navbar-brand-bnb" to="/">
-          <img className="logoFace" src=".\logo_no_background.png" alt="logo" />
+          <img className="logoFace" src="/logo_no_background.png" alt="logo" />
           Le Mura degli Angeli
         </Link>
 
