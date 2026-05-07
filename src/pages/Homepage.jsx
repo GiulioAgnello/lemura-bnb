@@ -303,16 +303,15 @@ export default function Homepage() {
                 direttamente tramite le piattaforme partner.
               </p>
               <div className="d-flex gap-3 justify-content-center flex-wrap">
-                <a
-                  href={AIRBNB_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  type="button"
+                  onClick={() => setBookingOpen(true)}
                   className="btn-bnb btn-bnb-accent"
                 >
-                  Prenota su Airbnb.com
-                </a>
+                  Prenota subito
+                </button>
                 <Link to="/contatti" className="btn-bnb btn-bnb-white">
-                  Richiedi disponibilità
+                  Richiedi maggiori informazioni
                 </Link>
               </div>
             </div>

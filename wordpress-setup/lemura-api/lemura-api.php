@@ -10,13 +10,31 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 
 // ============================================================
 // 1. CORS — permette al frontend di chiamare le API
+//    Gestisce anche il preflight OPTIONS prima che WP lo blocchi
 // ============================================================
+add_action( 'init', function () {
+    // Applica solo alle richieste verso la REST API
+    $uri = isset( $_SERVER['REQUEST_URI'] ) ? $_SERVER['REQUEST_URI'] : '';
+    if ( strpos( $uri, '/wp-json/' ) === false ) return;
+
+    header( 'Access-Control-Allow-Origin: *' );
+    header( 'Access-Control-Allow-Methods: GET, POST, OPTIONS' );
+    header( 'Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With' );
+    header( 'Access-Control-Max-Age: 86400' );
+
+    // Risponde subito alle richieste preflight OPTIONS
+    if ( isset( $_SERVER['REQUEST_METHOD'] ) && $_SERVER['REQUEST_METHOD'] === 'OPTIONS' ) {
+        status_header( 200 );
+        exit();
+    }
+}, 1 );
+
 add_action( 'rest_api_init', function () {
     remove_filter( 'rest_pre_serve_request', 'rest_send_cors_headers' );
     add_filter( 'rest_pre_serve_request', function ( $value ) {
         header( 'Access-Control-Allow-Origin: *' );
         header( 'Access-Control-Allow-Methods: GET, POST, OPTIONS' );
-        header( 'Access-Control-Allow-Headers: Content-Type, Authorization' );
+        header( 'Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With' );
         return $value;
     } );
 }, 15 );
@@ -743,6 +761,36 @@ function lemura_do_ical_sync() {
 // ============================================================
 // 12. PARSER iCal — importa eventi da un feed .ics
 // ============================================================
+// Helper: riconosce i summary che indicano chiusura manuale
+// (NON prenotazioni reali di ospiti)
+// ============================================================
+function lemura_ical_is_closure( $summary ) {
+    $s = strtolower( trim( $summary ) );
+
+    // Match esatto — chiusure tipiche di Airbnb e Booking.com
+    $exact = array(
+        'not available',
+        'airbnb (not available)',
+        'unavailable',
+        'closed',          // Booking.com: chiusura singola senza ID
+        'blocked',
+        'bloccato',
+        'nicht verfügbar', // tedesco
+        'no disponible',   // spagnolo
+        'indisponible',    // francese
+    );
+    if ( in_array( $s, $exact, true ) ) return true;
+
+    // Match parziale — es. "Airbnb (Not available) - ..."
+    $partial = array( 'not available', 'non disponibile' );
+    foreach ( $partial as $p ) {
+        if ( strpos( $s, $p ) !== false ) return true;
+    }
+
+    return false;
+}
+
+// ============================================================
 function lemura_import_ical_feed( $url, $unit, $source ) {
     $response = wp_remote_get( $url, array(
         'timeout'    => 30,
@@ -753,15 +801,61 @@ function lemura_import_ical_feed( $url, $unit, $source ) {
     $body = wp_remote_retrieve_body( $response );
     if ( ! $body ) return;
 
-    $events = lemura_parse_ical( $body );
+    $raw_events = lemura_parse_ical( $body );
 
-    foreach ( $events as $event ) {
-        if ( empty( $event['dtstart'] ) || empty( $event['dtend'] ) || empty( $event['uid'] ) ) continue;
+    // ----------------------------------------------------------
+    // 1. Filtra eventi fake (chiusure giornaliere, non prenotazioni)
+    // ----------------------------------------------------------
+    $real_events = array();
+    foreach ( $raw_events as $event ) {
+        if ( empty( $event['dtstart'] ) || empty( $event['dtend'] ) ) continue;
 
-        // Skip eventi nel passato
+        // Scarta eventi a durata zero
+        if ( $event['dtstart'] >= $event['dtend'] ) continue;
+
+        // Scarta chiusure manuali
+        $summary_raw = $event['summary'] ?? '';
+        if ( lemura_ical_is_closure( $summary_raw ) ) continue;
+
+        $real_events[] = $event;
+    }
+
+    // ----------------------------------------------------------
+    // 2. Raggruppa eventi consecutivi dello stesso "blocco"
+    //    (alcune piattaforme esportano 1 VEVENT per notte)
+    //    Ordina per data e unisci quelli adiacenti senza UID reale
+    // ----------------------------------------------------------
+    usort( $real_events, function( $a, $b ) {
+        return strcmp( $a['dtstart'], $b['dtstart'] );
+    } );
+
+    $merged = array();
+    foreach ( $real_events as $ev ) {
+        $last_idx     = count( $merged ) - 1;
+        $has_real_uid = ! empty( $ev['uid'] ) && strlen( $ev['uid'] ) > 10;
+
+        if (
+            $last_idx >= 0 &&
+            ! $has_real_uid &&
+            $merged[ $last_idx ]['dtend'] === $ev['dtstart']  // eventi adiacenti
+        ) {
+            // Estendi il blocco precedente
+            $merged[ $last_idx ]['dtend'] = $ev['dtend'];
+        } else {
+            $merged[] = $ev;
+        }
+    }
+
+    // ----------------------------------------------------------
+    // 3. Salva le prenotazioni reali
+    // ----------------------------------------------------------
+    foreach ( $merged as $event ) {
+        if ( empty( $event['uid'] ) ) continue;
+
+        // Skip nel passato
         if ( strtotime( $event['dtend'] ) < strtotime( 'today' ) ) continue;
 
-        // Controlla se esiste già (per UID + unità)
+        // Controlla se esiste già (UID + unità)
         $existing = get_posts( array(
             'post_type'   => 'prenotazione',
             'post_status' => 'publish',
@@ -773,7 +867,6 @@ function lemura_import_ical_feed( $url, $unit, $source ) {
         ) );
 
         if ( ! empty( $existing ) ) {
-            // Aggiorna le date se cambiate
             $pid = $existing[0]->ID;
             update_post_meta( $pid, 'pren_checkin',  $event['dtstart'] );
             update_post_meta( $pid, 'pren_checkout', $event['dtend'] );
