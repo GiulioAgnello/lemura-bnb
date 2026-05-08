@@ -71,9 +71,10 @@ add_action( 'acf/init', function () {
     if ( ! function_exists( 'acf_add_local_field_group' ) ) return;
 
     acf_add_local_field_group( array(
-        'key'    => 'group_alloggio_v1',
-        'title'  => 'Dettagli Alloggio',
-        'fields' => array(
+        'key'          => 'group_alloggio_v1',
+        'title'        => 'Dettagli Alloggio',
+        'show_in_rest' => 1,
+        'fields'       => array(
 
             array(
                 'key'          => 'field_struttura',

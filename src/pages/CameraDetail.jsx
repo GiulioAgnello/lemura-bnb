@@ -21,6 +21,8 @@ function normalizeCrmRoom(r) {
     ospiti: r.ospiti_massimi || "",
     superficie: r.superficie || "",
     servizi: Array.isArray(r.servizi) ? r.servizi.map((s) => s.nome).join(", ") : r.servizi || "",
+    checkin_time: r.checkin_time || "",
+    checkout_time: r.checkout_time || "",
     gallery: Array.isArray(r.gallery) ? r.gallery.map((u) => ({ url: u, alt: "" })) : [],
     bookingUrl: r.booking_url || "",
   };
@@ -150,7 +152,25 @@ export default function CameraDetail() {
                   style={{ borderBottom: "1px solid var(--color-border)" }}
                 >
                   <span className="text-muted">Superficie</span>
-                  <strong>{camera.superficie}</strong>
+                  <strong>{camera.superficie} mq</strong>
+                </div>
+              )}
+              {camera.checkin_time && (
+                <div
+                  className="d-flex justify-content-between py-2"
+                  style={{ borderBottom: "1px solid var(--color-border)" }}
+                >
+                  <span className="text-muted">Check-in</span>
+                  <strong>dalle {camera.checkin_time}</strong>
+                </div>
+              )}
+              {camera.checkout_time && (
+                <div
+                  className="d-flex justify-content-between py-2"
+                  style={{ borderBottom: "1px solid var(--color-border)" }}
+                >
+                  <span className="text-muted">Check-out</span>
+                  <strong>entro le {camera.checkout_time}</strong>
                 </div>
               )}
             </div>

@@ -78,6 +78,8 @@ export async function getCameraBySlug(slug) {
     ospiti: c.acf?.ospiti_massimi || "",
     superficie: c.acf?.superficie || "",
     servizi: c.acf?.servizi || "",
+    checkin_time: c.acf?.checkin_time || "",
+    checkout_time: c.acf?.checkout_time || "",
     gallery: c.acf?.gallery || [],
     bookingUrl: c.acf?.booking_url || "",
   };
