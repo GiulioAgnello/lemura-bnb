@@ -44,7 +44,7 @@ export async function getPageBySlug(slug) {
 
 export async function getCamere() {
   const result = await fetchAPI(
-    `/camera?_embed&acf_format=standard&per_page=20`,
+    `/alloggio?_embed&acf_format=standard&per_page=20`,
   );
   if (!result) return [];
   return result.data.map((c) => ({
@@ -64,7 +64,7 @@ export async function getCamere() {
 
 export async function getCameraBySlug(slug) {
   const result = await fetchAPI(
-    `/camera?slug=${slug}&_embed&acf_format=standard`,
+    `/alloggio?slug=${slug}&_embed&acf_format=standard`,
   );
   if (!result?.data?.[0]) return null;
   const c = result.data[0];
