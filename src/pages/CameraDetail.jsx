@@ -18,9 +18,9 @@ function normalizeCrmRoom(r) {
     content: "",
     featuredImage: r.featured_image ? { url: r.featured_image, alt: r.title } : null,
     prezzo: r.prezzo_notte || "",
-    ospiti: r.ospiti_max || "",
+    ospiti: r.ospiti_massimi || "",
     superficie: r.superficie || "",
-    servizi: Array.isArray(r.servizi) ? r.servizi.join(", ") : r.servizi || "",
+    servizi: Array.isArray(r.servizi) ? r.servizi.map((s) => s.nome).join(", ") : r.servizi || "",
     gallery: Array.isArray(r.gallery) ? r.gallery.map((u) => ({ url: u, alt: "" })) : [],
     bookingUrl: r.booking_url || "",
   };
