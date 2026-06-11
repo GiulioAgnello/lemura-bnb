@@ -22,6 +22,9 @@ const nunito = Nunito_Sans({
 });
 
 export const metadata = {
+  verification: {
+    google: 'p4VW9CNbZn5IC5rpeKYZuCdJrCTHCtOjh9VuiCkcNl8',
+  },
   title: {
     template: '%s | Le Mura degli Angeli',
     default: 'Le Mura degli Angeli — B&B e Dimora Antica nel Salento',
