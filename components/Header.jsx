@@ -2,6 +2,7 @@
 import { useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { getBrandForPath } from '@/lib/brands';
 
 const navItems = [
   { label: 'Home', href: '/' },
@@ -15,6 +16,7 @@ const navItems = [
 
 export default function Header() {
   const pathname = usePathname();
+  const brand = getBrandForPath(pathname);
 
   useEffect(() => {
     import('bootstrap/dist/js/bootstrap.bundle.min.js');
@@ -24,8 +26,8 @@ export default function Header() {
     <nav className="navbar navbar-expand-lg navbar-bnb sticky-top">
       <div className="container">
         <Link className="navbar-brand navbar-brand-bnb" href="/">
-          <img className="logoFace" src="/logo_no_background.png" alt="Le Mura degli Angeli" />
-          Le Mura degli Angeli
+          <img className="logoFace" src={brand.logo} alt={brand.name} key={brand.logo} />
+          {brand.name}
         </Link>
 
         <button

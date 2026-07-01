@@ -16,9 +16,9 @@ export async function generateMetadata({ params }) {
     openGraph: { title: 'Sternatia — Casa Intera nel Salento | Le Mura degli Angeli', description: "Casa vacanze intera a Sternatia, borgo della Grecìa Salentina. Dimora storica con cortile privato e ulivi." },
   };
   return {
-    title: "Corigliano d'Otranto — B&B in Dimora Storica Medievale",
-    description: "B&B a Corigliano d'Otranto: due camere con soffitti a volta in pietra leccese, nel cuore del borgo medievale. Spa inclusa. A 40 min dal mare.",
-    openGraph: { title: "B&B Corigliano d'Otranto | Le Mura degli Angeli", description: "Due camere in un'antica dimora medievale a Corigliano d'Otranto, nel Salento. Volte in pietra, spa e colazione." },
+    title: "Menima — B&B in Dimora Storica a Corigliano d'Otranto",
+    description: "Menima, B&B a Corigliano d'Otranto: due camere con soffitti a volta in pietra leccese, nel cuore del borgo medievale. Spa inclusa. A 40 min dal mare.",
+    openGraph: { title: "Menima — B&B Corigliano d'Otranto | Le Mura degli Angeli", description: "Menima: due camere in un'antica dimora medievale a Corigliano d'Otranto, nel Salento. Volte in pietra, spa e colazione." },
   };
 }
 
@@ -63,8 +63,8 @@ function CoriglianoDetail({ data }) {
   const schemaB2B = {
     '@context': 'https://schema.org',
     '@type': 'BedAndBreakfast',
-    name: "Le Mura degli Angeli — Corigliano d'Otranto",
-    description: "B&B in un'antica dimora medievale a Corigliano d'Otranto. Due camere con volte in pietra leccese e spa.",
+    name: "Menima — B&B a Corigliano d'Otranto (Le Mura degli Angeli)",
+    description: "Menima, B&B in un'antica dimora medievale a Corigliano d'Otranto. Due camere con volte in pietra leccese e spa.",
     url: 'https://www.lemuradegliangeli.it/strutture/corigliano',
     address: { '@type': 'PostalAddress', addressLocality: "Corigliano d'Otranto", addressRegion: 'Puglia', addressCountry: 'IT' },
     containsPlace: data.rooms.map((r) => ({
@@ -84,7 +84,8 @@ function CoriglianoDetail({ data }) {
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.15), rgba(0,0,0,0.55))', display: 'flex', alignItems: 'flex-end', padding: '2.5rem' }}>
           <div className="container">
             <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.75rem', letterSpacing: '0.12em', textTransform: 'uppercase' }}>Due Camere — B&B</span>
-            <h1 style={{ fontFamily: 'var(--font-display)', color: '#fff', fontSize: '2.4rem', margin: '0.3rem 0 0' }}>Corigliano d'Otranto</h1>
+            <h1 style={{ fontFamily: 'var(--font-display)', color: '#fff', fontSize: '2.8rem', margin: '0.2rem 0 0', lineHeight: 1.1 }}>Menima</h1>
+            <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: '1rem', margin: '0.4rem 0 0', letterSpacing: '0.03em' }}>Dimora storica a Corigliano d'Otranto</p>
           </div>
         </div>
       </div>

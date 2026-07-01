@@ -77,7 +77,7 @@ function normalizeStrutture(apiData) {
   const PLACEHOLDER = [
     {
       slug: "corigliano",
-      nome: "Corigliano d'Otranto",
+      nome: "Menima",
       tipo: "Due Camere",
       image:
         "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80",
