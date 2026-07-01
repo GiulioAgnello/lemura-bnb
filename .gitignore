@@ -1,6 +1,33 @@
+# === Dipendenze ===
 node_modules/
+.pnp
+.pnp.js
+
+# === Build / output (Vercel li rigenera, NON committare) ===
+.next/
+out/
 dist/
-.env.local
+build/
+*.tsbuildinfo
+next-env.d.ts
+
+# === Vercel ===
+.vercel
+
+# === Env / segreti ===
 .env
-.DS_Store
+.env.local
+.env.*.local
+
+# === Log ===
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# === Sistema / editor ===
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
