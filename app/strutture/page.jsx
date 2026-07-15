@@ -4,6 +4,7 @@ import { getStrutture } from '@/lib/wordpress';
 export const revalidate = 3600;
 
 export const metadata = {
+  alternates: { canonical: "/strutture" },
   title: 'Le Nostre Strutture — B&B e Casa Vacanze nel Salento',
   description:
     "Due esperienze nel cuore del Salento: il B&B a Corigliano d'Otranto con spa in una dimora storica medievale, e la casa intera a Sternatia nella Grecìa Salentina.",

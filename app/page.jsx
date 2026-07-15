@@ -16,6 +16,9 @@ export const metadata = {
     "affitto salento",
     "b&b puglia",
   ],
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
     title: "Le Mura degli Angeli — B&B e Dimora Antica nel Salento",
     description:

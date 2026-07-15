@@ -13,11 +13,13 @@ export async function generateMetadata({ params }) {
   if (slug === 'sternatia') return {
     title: "Sternatia — Casa Vacanze Intera nella Grecìa Salentina",
     description: "Affita l'intera dimora storica di Sternatia: cortile privato, 3 camere, cucina attrezzata, fino a 6 ospiti. Nella Grecìa Salentina, a 15 min da Lecce.",
+    alternates: { canonical: "/strutture/sternatia" },
     openGraph: { title: 'Sternatia — Casa Intera nel Salento | Le Mura degli Angeli', description: "Casa vacanze intera a Sternatia, borgo della Grecìa Salentina. Dimora storica con cortile privato e ulivi." },
   };
   return {
     title: "Menima — B&B in Dimora Storica a Corigliano d'Otranto",
     description: "Menima, B&B a Corigliano d'Otranto: due camere con soffitti a volta in pietra leccese, nel cuore del borgo medievale. Spa inclusa. A 40 min dal mare.",
+    alternates: { canonical: "/strutture/corigliano" },
     openGraph: { title: "Menima — B&B Corigliano d'Otranto | Le Mura degli Angeli", description: "Menima: due camere in un'antica dimora medievale a Corigliano d'Otranto, nel Salento. Volte in pietra, spa e colazione." },
   };
 }

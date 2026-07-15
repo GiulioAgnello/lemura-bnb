@@ -1,4 +1,5 @@
 export const metadata = {
+  alternates: { canonical: "/spa" },
   title: 'Spa & Wellness — B&B Le Mura degli Angeli Salento',
   description: 'La nostra spa nelle cantine dell\'antica dimora di Corigliano d\'Otranto. Trattamenti benessere nel Salento. Prossimamente disponibile.',
 };

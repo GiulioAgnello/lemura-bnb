@@ -3,6 +3,7 @@ import { getEsperienze } from '@/lib/wordpress';
 export const revalidate = 3600;
 
 export const metadata = {
+  alternates: { canonical: "/esperienze" },
   title: 'Esperienze nel Salento — Cosa Fare vicino al B&B',
   description:
     'Lecce, spiagge di Porto Cesareo, Otranto, frantoi ipogei, grotte e borghi medievali. Scopri le migliori esperienze nel Salento vicino a Le Mura degli Angeli.',

@@ -19,6 +19,7 @@ export async function generateMetadata({ params }) {
   return {
     title: `${camera.title} — B&B nel Salento`,
     description: `${camera.title} a Le Mura degli Angeli, Corigliano d'Otranto. ${camera.servizi || ''}. ${camera.prezzo ? `Da €${camera.prezzo} / notte.` : ''} Soffitti a volta in pietra leccese nel borgo medievale del Salento.`,
+    alternates: { canonical: `/camere/${slug}` },
     openGraph: {
       title: `${camera.title} | Le Mura degli Angeli B&B`,
       images: camera.featuredImage ? [{ url: camera.featuredImage.url, alt: camera.featuredImage.alt }] : [],

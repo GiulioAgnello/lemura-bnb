@@ -4,6 +4,7 @@ import ContattiForm from '@/components/ContattiForm';
 export const revalidate = 3600;
 
 export const metadata = {
+  alternates: { canonical: "/contatti" },
   title: 'Contatti e Prenotazioni — B&B Le Mura degli Angeli Salento',
   description:
     "Contatta Le Mura degli Angeli per prenotare il tuo soggiorno nel Salento. B&B a Corigliano d'Otranto e casa vacanze a Sternatia. Risposta entro 24 ore.",

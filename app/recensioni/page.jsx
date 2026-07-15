@@ -3,6 +3,7 @@ import { getRecensioni } from '@/lib/wordpress';
 export const revalidate = 3600;
 
 export const metadata = {
+  alternates: { canonical: "/recensioni" },
   title: 'Recensioni Ospiti — B&B Le Mura degli Angeli Salento',
   description:
     'Leggi le recensioni dei nostri ospiti su Le Mura degli Angeli, B&B nel Salento. Valutazione 5 stelle su Booking.com, Airbnb e Google.',

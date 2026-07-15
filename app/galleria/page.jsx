@@ -4,6 +4,7 @@ import GalleriaClient from '@/components/GalleriaClient';
 export const revalidate = 3600;
 
 export const metadata = {
+  alternates: { canonical: "/galleria" },
   title: 'Galleria Fotografica — Dimora Storica nel Salento',
   description:
     'Scopri Le Mura degli Angeli attraverso le nostre foto: camere con volte a stella, cortile con ulivi, la spa e i paesaggi del Salento. B&B a Corigliano d\'Otranto.',
