@@ -2844,3 +2844,224 @@ add_action( 'rest_api_init', function () {
         },
     ) );
 } );
+
+// ============================================================
+// 22. WELCOME OSPITI — contenuti multilingua + endpoint
+// ============================================================
+// Pagina pubblica /welcome (frontend) per gli ospiti. Contenuti
+// gestiti in wp-admin, tradotti in 5 lingue (it/en/fr/de/es).
+// Nessuna dipendenza da ACF Pro: CPT + campi base.
+
+function lemura_wl_langs() {
+    return array( 'it' => 'Italiano', 'en' => 'English', 'fr' => 'Français', 'de' => 'Deutsch', 'es' => 'Español' );
+}
+
+// Genera 5 campi ACF (uno per lingua) con lo stesso prefisso.
+function lemura_wl_i18n( $prefix, $label, $type = 'textarea', $rows = 3 ) {
+    $out = array();
+    foreach ( lemura_wl_langs() as $code => $name ) {
+        $f = array(
+            'key'   => "field_{$prefix}_{$code}",
+            'label' => "{$label} — {$name}",
+            'name'  => "{$prefix}_{$code}",
+            'type'  => $type,
+        );
+        if ( $type === 'textarea' ) $f['rows'] = $rows;
+        $out[] = $f;
+    }
+    return $out;
+}
+
+// Valore tradotto con fallback all'italiano.
+function lemura_wl_pick( $post_id, $prefix, $lang ) {
+    $v = get_post_meta( $post_id, "{$prefix}_{$lang}", true );
+    if ( $v === '' || $v === null ) $v = get_post_meta( $post_id, "{$prefix}_it", true );
+    return $v;
+}
+
+// ---- CPT ----
+add_action( 'init', function () {
+    register_post_type( 'welcome_info', array(
+        'labels'        => array( 'name' => 'Welcome · Info soggiorno', 'singular_name' => 'Info soggiorno', 'edit_item' => 'Info soggiorno' ),
+        'public'        => false,
+        'show_ui'       => true,
+        'menu_icon'     => 'dashicons-welcome-learn-more',
+        'menu_position' => 26,
+        'supports'      => array( 'title' ),
+    ) );
+    register_post_type( 'welcome_nota', array(
+        'labels'       => array( 'name' => 'Welcome · Note', 'singular_name' => 'Nota', 'add_new_item' => 'Nuova nota', 'edit_item' => 'Modifica nota' ),
+        'public'       => false,
+        'show_ui'      => true,
+        'show_in_menu' => 'edit.php?post_type=welcome_info',
+        'supports'     => array( 'title', 'page-attributes' ),
+    ) );
+    register_post_type( 'welcome_luogo', array(
+        'labels'       => array( 'name' => 'Welcome · Luoghi & Ristoranti', 'singular_name' => 'Luogo', 'add_new_item' => 'Nuovo luogo', 'edit_item' => 'Modifica luogo' ),
+        'public'       => false,
+        'show_ui'      => true,
+        'show_in_menu' => 'edit.php?post_type=welcome_info',
+        'supports'     => array( 'title', 'thumbnail', 'page-attributes' ),
+    ) );
+} );
+
+// ---- Campi ACF ----
+add_action( 'acf/init', function () {
+    if ( ! function_exists( 'acf_add_local_field_group' ) ) return;
+
+    acf_add_local_field_group( array(
+        'key'    => 'group_welcome_info',
+        'title'  => 'Contenuti soggiorno',
+        'fields' => array_merge(
+            array(
+                array( 'key' => 'field_w_wifi_net',  'label' => 'WiFi — Rete (SSID)',        'name' => 'w_wifi_net',  'type' => 'text' ),
+                array( 'key' => 'field_w_wifi_pass', 'label' => 'WiFi — Password',           'name' => 'w_wifi_pass', 'type' => 'text' ),
+                array( 'key' => 'field_w_host_name', 'label' => 'Host — Nome',               'name' => 'w_host_name', 'type' => 'text' ),
+                array( 'key' => 'field_w_host_phone','label' => 'Host — Telefono',           'name' => 'w_host_phone','type' => 'text' ),
+                array( 'key' => 'field_w_host_wa',   'label' => 'Host — WhatsApp (es. 39327…)','name' => 'w_host_wa', 'type' => 'text' ),
+            ),
+            lemura_wl_i18n( 'w_msg',      'Messaggio di benvenuto' ),
+            lemura_wl_i18n( 'w_checkin',  'Check-in (orari + come entrare)' ),
+            lemura_wl_i18n( 'w_checkout', 'Check-out' ),
+            lemura_wl_i18n( 'w_access',   'Come arrivare / parcheggio' ),
+            lemura_wl_i18n( 'w_rules',    'Regole della casa' )
+        ),
+        'location' => array( array( array( 'param' => 'post_type', 'operator' => '==', 'value' => 'welcome_info' ) ) ),
+    ) );
+
+    acf_add_local_field_group( array(
+        'key'    => 'group_welcome_nota',
+        'title'  => 'Nota',
+        'fields' => array_merge(
+            array(
+                array( 'key' => 'field_n_cat', 'label' => 'Categoria', 'name' => 'n_cat', 'type' => 'select', 'default_value' => 'casa', 'choices' => array(
+                    'dimora'    => 'Dimora antica — accortezze',
+                    'casa'      => 'Come funziona la casa',
+                    'colazione' => 'Colazione',
+                    'spazzatura'=> 'Raccolta differenziata',
+                    'servizio'  => 'Servizio vicino',
+                    'emergenza' => 'Numero utile / emergenza',
+                ) ),
+                array( 'key' => 'field_n_icon', 'label' => 'Icona (emoji, opz.)', 'name' => 'n_icon', 'type' => 'text' ),
+                array( 'key' => 'field_n_val',  'label' => 'Valore (telefono / indirizzo / maps, opz.)', 'name' => 'n_val', 'type' => 'text' ),
+            ),
+            lemura_wl_i18n( 'nt', 'Titolo', 'text' ),
+            lemura_wl_i18n( 'nd', 'Testo' )
+        ),
+        'location' => array( array( array( 'param' => 'post_type', 'operator' => '==', 'value' => 'welcome_nota' ) ) ),
+    ) );
+
+    acf_add_local_field_group( array(
+        'key'    => 'group_welcome_luogo',
+        'title'  => 'Luogo / Ristorante',
+        'fields' => array_merge(
+            array(
+                array( 'key' => 'field_l_tipo', 'label' => 'Tipo', 'name' => 'l_tipo', 'type' => 'select', 'default_value' => 'poi', 'choices' => array( 'poi' => 'Punto di interesse', 'ristorante' => 'Ristorante' ) ),
+                array( 'key' => 'field_l_cat', 'label' => 'Categoria (POI)', 'name' => 'l_cat', 'type' => 'select', 'allow_null' => 1, 'choices' => array( 'beach' => 'Spiaggia', 'town' => 'Borgo / Città', 'nature' => 'Natura' ) ),
+                array( 'key' => 'field_l_coast', 'label' => 'Costa (spiagge)', 'name' => 'l_coast', 'type' => 'select', 'allow_null' => 1, 'choices' => array( 'adriatico' => 'Adriatico', 'ionio' => 'Ionio' ) ),
+                array( 'key' => 'field_l_zona', 'label' => 'Zona (ristoranti)', 'name' => 'l_zona', 'type' => 'select', 'allow_null' => 1, 'choices' => array( 'sternatia' => 'Sternatia', 'lecce' => 'Lecce', 'salento' => 'Salento' ) ),
+                array( 'key' => 'field_l_rtipo', 'label' => 'Tipo cucina (ristoranti)', 'name' => 'l_rtipo', 'type' => 'text' ),
+                array( 'key' => 'field_l_dist', 'label' => 'Distanza in auto (min)', 'name' => 'l_dist', 'type' => 'number' ),
+                array( 'key' => 'field_l_maps', 'label' => 'Query mappa (es. "Otranto")', 'name' => 'l_maps', 'type' => 'text' ),
+                array( 'key' => 'field_l_img', 'label' => 'Immagine', 'name' => 'l_img', 'type' => 'image', 'return_format' => 'url', 'preview_size' => 'medium' ),
+            ),
+            lemura_wl_i18n( 'ld', 'Descrizione' )
+        ),
+        'location' => array( array( array( 'param' => 'post_type', 'operator' => '==', 'value' => 'welcome_luogo' ) ) ),
+    ) );
+} );
+
+// ---- Regole vento → spiaggia (statiche, tradotte) ----
+function lemura_wl_wind_rules( $lang ) {
+    $rules = array(
+        array( 'coast' => 'adriatico', 'wind' => array( 'W', 'NW', 'SW' ),
+            'wind_label'  => array( 'it' => 'Ovest / Maestrale / Libeccio', 'en' => 'West / Mistral', 'fr' => 'Ouest / Mistral', 'de' => 'West / Mistral', 'es' => 'Oeste / Mistral' ),
+            'coast_label' => array( 'it' => 'Costa Adriatica (Est) — riparata', 'en' => 'Adriatic coast (East) — sheltered', 'fr' => 'Côte Adriatique (Est) — abritée', 'de' => 'Adriaküste (Ost) — geschützt', 'es' => 'Costa Adriática (Este) — resguardada' ) ),
+        array( 'coast' => 'ionio', 'wind' => array( 'E', 'NE', 'SE' ),
+            'wind_label'  => array( 'it' => 'Est / Grecale / Scirocco', 'en' => 'East / Sirocco', 'fr' => 'Est / Sirocco', 'de' => 'Ost / Schirokko', 'es' => 'Este / Siroco' ),
+            'coast_label' => array( 'it' => 'Costa Ionica (Ovest) — riparata', 'en' => 'Ionian coast (West) — sheltered', 'fr' => 'Côte Ionienne (Ouest) — abritée', 'de' => 'Ionische Küste (West) — geschützt', 'es' => 'Costa Jónica (Oeste) — resguardada' ) ),
+        array( 'coast' => 'ionio', 'wind' => array( 'N' ),
+            'wind_label'  => array( 'it' => 'Nord / Tramontana', 'en' => 'North / Tramontana', 'fr' => 'Nord / Tramontane', 'de' => 'Nord / Tramontana', 'es' => 'Norte / Tramontana' ),
+            'coast_label' => array( 'it' => 'Ionio sud — più riparato', 'en' => 'Southern Ionian — more sheltered', 'fr' => 'Ionienne sud — plus abritée', 'de' => 'Südliche Ionische — geschützter', 'es' => 'Jónica sur — más resguardada' ) ),
+        array( 'coast' => 'adriatico', 'wind' => array( 'S' ),
+            'wind_label'  => array( 'it' => 'Sud / Ostro', 'en' => 'South / Ostro', 'fr' => 'Sud / Ostro', 'de' => 'Süd / Ostro', 'es' => 'Sur / Ostro' ),
+            'coast_label' => array( 'it' => 'Adriatico nord — più riparato', 'en' => 'Northern Adriatic — more sheltered', 'fr' => 'Adriatique nord — plus abritée', 'de' => 'Nördliche Adria — geschützter', 'es' => 'Adriático norte — más resguardado' ) ),
+    );
+    $out = array();
+    foreach ( $rules as $r ) {
+        $out[] = array(
+            'wind'        => $r['wind'],
+            'coast'       => $r['coast'],
+            'wind_label'  => $r['wind_label'][ $lang ] ?? $r['wind_label']['it'],
+            'coast_label' => $r['coast_label'][ $lang ] ?? $r['coast_label']['it'],
+        );
+    }
+    return $out;
+}
+
+// ---- Endpoint pubblico ----
+add_action( 'rest_api_init', function () {
+    register_rest_route( 'lemura-crm/v1', '/welcome', array(
+        'methods'             => WP_REST_Server::READABLE,
+        'permission_callback' => '__return_true',
+        'callback'            => function ( WP_REST_Request $req ) {
+            $langs = array_keys( lemura_wl_langs() );
+            $lang  = sanitize_text_field( (string) $req->get_param( 'lang' ) );
+            if ( ! in_array( $lang, $langs, true ) ) $lang = 'it';
+
+            // Info soggiorno (primo post)
+            $info = array();
+            $info_posts = get_posts( array( 'post_type' => 'welcome_info', 'post_status' => 'publish', 'numberposts' => 1 ) );
+            if ( ! empty( $info_posts ) ) {
+                $pid = $info_posts[0]->ID;
+                $info = array(
+                    'welcome'  => lemura_wl_pick( $pid, 'w_msg', $lang ),
+                    'checkin'  => lemura_wl_pick( $pid, 'w_checkin', $lang ),
+                    'checkout' => lemura_wl_pick( $pid, 'w_checkout', $lang ),
+                    'access'   => lemura_wl_pick( $pid, 'w_access', $lang ),
+                    'rules'    => lemura_wl_pick( $pid, 'w_rules', $lang ),
+                    'wifi'     => array( 'network' => get_post_meta( $pid, 'w_wifi_net', true ), 'password' => get_post_meta( $pid, 'w_wifi_pass', true ) ),
+                    'host'     => array( 'name' => get_post_meta( $pid, 'w_host_name', true ), 'phone' => get_post_meta( $pid, 'w_host_phone', true ), 'whatsapp' => get_post_meta( $pid, 'w_host_wa', true ) ),
+                );
+            }
+
+            // Note
+            $note = array();
+            foreach ( get_posts( array( 'post_type' => 'welcome_nota', 'post_status' => 'publish', 'numberposts' => -1, 'orderby' => 'menu_order title', 'order' => 'ASC' ) ) as $p ) {
+                $note[] = array(
+                    'categoria' => get_post_meta( $p->ID, 'n_cat', true ),
+                    'icona'     => get_post_meta( $p->ID, 'n_icon', true ),
+                    'valore'    => get_post_meta( $p->ID, 'n_val', true ),
+                    'titolo'    => lemura_wl_pick( $p->ID, 'nt', $lang ),
+                    'testo'     => lemura_wl_pick( $p->ID, 'nd', $lang ),
+                );
+            }
+
+            // Luoghi & ristoranti
+            $luoghi = array();
+            foreach ( get_posts( array( 'post_type' => 'welcome_luogo', 'post_status' => 'publish', 'numberposts' => -1, 'orderby' => 'menu_order title', 'order' => 'ASC' ) ) as $p ) {
+                $img = function_exists( 'get_field' ) ? get_field( 'l_img', $p->ID ) : get_post_meta( $p->ID, 'l_img', true );
+                $luoghi[] = array(
+                    'nome'         => get_the_title( $p ),
+                    'tipo'         => get_post_meta( $p->ID, 'l_tipo', true ),
+                    'categoria'    => get_post_meta( $p->ID, 'l_cat', true ),
+                    'coast'        => get_post_meta( $p->ID, 'l_coast', true ),
+                    'zona'         => get_post_meta( $p->ID, 'l_zona', true ),
+                    'cucina'       => get_post_meta( $p->ID, 'l_rtipo', true ),
+                    'distanza_min' => get_post_meta( $p->ID, 'l_dist', true ),
+                    'maps_query'   => get_post_meta( $p->ID, 'l_maps', true ),
+                    'immagine'     => $img ?: '',
+                    'descrizione'  => lemura_wl_pick( $p->ID, 'ld', $lang ),
+                );
+            }
+
+            return rest_ensure_response( array(
+                'lang'             => $lang,
+                'info'             => $info,
+                'note'             => $note,
+                'luoghi'           => $luoghi,
+                'wind_beach_rules' => lemura_wl_wind_rules( $lang ),
+            ) );
+        },
+    ) );
+} );
