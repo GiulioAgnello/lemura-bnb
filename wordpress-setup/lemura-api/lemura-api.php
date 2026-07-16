@@ -730,6 +730,60 @@ add_action( 'acf/init', function () {
             array( 'key' => 'field_pren_guest_phone', 'label' => 'Telefono',     'name' => 'pren_guest_phone', 'type' => 'text' ),
             array( 'key' => 'field_pren_guests',      'label' => 'N. ospiti',    'name' => 'pren_guests',      'type' => 'number' ),
             array( 'key' => 'field_pren_message',     'label' => 'Messaggio',    'name' => 'pren_message',     'type' => 'textarea' ),
+
+            // ── Campi operativi (agenda collaboratori) ──────────
+            array(
+                'key'          => 'field_pren_checkin_time',
+                'label'        => 'Orario check-in',
+                'name'         => 'pren_checkin_time',
+                'type'         => 'time_picker',
+                'display_format' => 'H:i',
+                'return_format'  => 'H:i',
+                'instructions' => 'Orario di arrivo concordato con l\'ospite.',
+            ),
+            array(
+                'key'          => 'field_pren_checkout_time',
+                'label'        => 'Orario check-out',
+                'name'         => 'pren_checkout_time',
+                'type'         => 'time_picker',
+                'display_format' => 'H:i',
+                'return_format'  => 'H:i',
+                'instructions' => 'Orario di partenza concordato con l\'ospite.',
+            ),
+            array(
+                'key'     => 'field_pren_payment',
+                'label'   => 'Pagamento',
+                'name'    => 'pren_payment',
+                'type'    => 'select',
+                'choices' => array(
+                    'unpaid'  => '🔴 Non pagato',
+                    'deposit' => '🟡 Acconto',
+                    'paid'    => '🟢 Saldato',
+                ),
+                'default_value' => 'unpaid',
+                'allow_null'    => 1,
+            ),
+            array(
+                'key'     => 'field_pren_cleaning',
+                'label'   => 'Pulizia',
+                'name'    => 'pren_cleaning',
+                'type'    => 'select',
+                'choices' => array(
+                    'todo' => '🧹 Da fare',
+                    'done' => '✅ Fatta',
+                ),
+                'default_value' => 'todo',
+                'allow_null'    => 1,
+            ),
+            array(
+                'key'          => 'field_pren_notes',
+                'label'        => 'Note interne',
+                'name'         => 'pren_notes',
+                'type'         => 'textarea',
+                'instructions' => 'Note visibili solo ai collaboratori (non all\'ospite).',
+                'rows'         => 3,
+            ),
+
             array(
                 'key'     => 'field_pren_status',
                 'label'   => 'Stato',
@@ -2515,3 +2569,278 @@ add_action( 'save_post_alloggio', function ( $post_id ) {
 // ============================================================
 add_filter( 'xmlrpc_enabled', '__return_false' );
 remove_action( 'wp_head', 'wp_generator' );
+
+// ============================================================
+// 21. AGENDA COLLABORATORI — endpoint protetti da codice
+// ============================================================
+// Pagina segreta consumata dal frontend Next.js (/agenda).
+// Mostra tutte le prenotazioni (iCal + manuali) e permette ai
+// collaboratori di compilare i campi operativi.
+// Protezione: un codice d'accesso condiviso (link "in famiglia").
+
+// Codice d'accesso. Modificabile qui, oppure via opzione WP
+// 'lemura_agenda_code' senza toccare il codice.
+if ( ! defined( 'LEMURA_AGENDA_CODE' ) ) {
+    define( 'LEMURA_AGENDA_CODE', '7788' );
+}
+
+function lemura_agenda_code() {
+    $opt = get_option( 'lemura_agenda_code' );
+    return $opt ? $opt : LEMURA_AGENDA_CODE;
+}
+
+/**
+ * Verifica il codice d'accesso: accettato come parametro ?code=
+ * oppure come header HTTP X-Lemura-Code.
+ */
+function lemura_agenda_check_code( WP_REST_Request $request ) {
+    $code = (string) $request->get_param( 'code' );
+    if ( $code === '' ) {
+        $code = (string) $request->get_header( 'x_lemura_code' );
+    }
+    if ( $code === '' || ! hash_equals( (string) lemura_agenda_code(), $code ) ) {
+        return new WP_Error( 'forbidden', 'Codice di accesso non valido.', array( 'status' => 401 ) );
+    }
+    return true;
+}
+
+function lemura_agenda_unit_label( $unit ) {
+    $labels = array(
+        'sternatia'           => 'Sternatia — Casa intera',
+        'corigliano-camera-1' => 'Corigliano — Camera 1',
+        'corigliano-camera-2' => 'Corigliano — Camera 2',
+    );
+    return $labels[ $unit ] ?? $unit;
+}
+
+/** Trasforma un post prenotazione nel formato JSON dell'agenda. */
+function lemura_agenda_serialize( $post ) {
+    $id     = $post->ID;
+    $g      = function ( $k ) use ( $id ) { return get_post_meta( $id, $k, true ); };
+    $source = $g( 'pren_source' );
+    // Le prenotazioni iCal (Airbnb/Booking) hanno date bloccate e non
+    // sono cancellabili da qui. Solo i blocchi "manual" sono nostri.
+    $is_manual = ( $source === 'manual' );
+    return array(
+        'id'            => $id,
+        'unit'          => $g( 'pren_unit' ),
+        'unit_label'    => lemura_agenda_unit_label( $g( 'pren_unit' ) ),
+        'checkin'       => $g( 'pren_checkin' ),        // data (Y-m-d)
+        'checkout'      => $g( 'pren_checkout' ),       // data (Y-m-d)
+        'checkin_time'  => $g( 'pren_checkin_time' ),   // orario manuale
+        'checkout_time' => $g( 'pren_checkout_time' ),  // orario manuale
+        'guest_name'    => $g( 'pren_guest_name' ),
+        'guest_email'   => $g( 'pren_guest_email' ),
+        'guest_phone'   => $g( 'pren_guest_phone' ),
+        'guests'        => $g( 'pren_guests' ),
+        'status'        => $g( 'pren_status' ),
+        'source'        => $source,
+        'payment'       => $g( 'pren_payment' ),
+        'cleaning'      => $g( 'pren_cleaning' ),
+        'notes'         => $g( 'pren_notes' ),
+        'message'       => $g( 'pren_message' ),
+        'locked'        => in_array( $source, array( 'airbnb', 'booking' ), true ), // date non modificabili
+        'deletable'     => $is_manual,  // solo i blocchi manuali si possono liberare
+    );
+}
+
+add_action( 'rest_api_init', function () {
+
+    $valid_units = array( 'sternatia', 'corigliano-camera-1', 'corigliano-camera-2' );
+
+    // ── GET /lemura-crm/v1/agenda?code=...&from=YYYY-MM-DD&to=YYYY-MM-DD&unit=... ──
+    register_rest_route( 'lemura-crm/v1', '/agenda', array(
+        'methods'             => WP_REST_Server::READABLE,
+        'permission_callback' => 'lemura_agenda_check_code',
+        'callback'            => function ( WP_REST_Request $request ) use ( $valid_units ) {
+            $unit = sanitize_text_field( (string) $request->get_param( 'unit' ) );
+            $from = sanitize_text_field( (string) $request->get_param( 'from' ) );
+            $to   = sanitize_text_field( (string) $request->get_param( 'to' ) );
+
+            // Default: da oggi in poi (nascondi prenotazioni già concluse)
+            if ( $from === '' ) $from = date( 'Y-m-d' );
+
+            $meta_query = array( 'relation' => 'AND' );
+            $meta_query[] = array( 'key' => 'pren_checkout', 'value' => $from, 'compare' => '>=', 'type' => 'DATE' );
+            if ( $to !== '' ) {
+                $meta_query[] = array( 'key' => 'pren_checkin', 'value' => $to, 'compare' => '<=', 'type' => 'DATE' );
+            }
+            if ( in_array( $unit, $valid_units, true ) ) {
+                $meta_query[] = array( 'key' => 'pren_unit', 'value' => $unit );
+            }
+
+            $posts = get_posts( array(
+                'post_type'   => 'prenotazione',
+                'post_status' => 'publish',
+                'numberposts' => -1,
+                'meta_query'  => $meta_query,
+                'meta_key'    => 'pren_checkin',
+                'orderby'     => 'meta_value',
+                'order'       => 'ASC',
+            ) );
+
+            $out = array_map( 'lemura_agenda_serialize', $posts );
+            return rest_ensure_response( array(
+                'count'    => count( $out ),
+                'bookings' => array_values( $out ),
+            ) );
+        },
+    ) );
+
+    // ── PATCH /lemura-crm/v1/agenda/{id}?code=... ──────────────
+    // Aggiorna SOLO i campi manuali. Date, unità, UID e fonte
+    // (gestiti da iCal) non sono modificabili da qui.
+    register_rest_route( 'lemura-crm/v1', '/agenda/(?P<id>\d+)', array(
+        'methods'             => WP_REST_Server::EDITABLE, // POST/PUT/PATCH
+        'permission_callback' => 'lemura_agenda_check_code',
+        'callback'            => function ( WP_REST_Request $request ) {
+            $id = (int) $request['id'];
+            if ( get_post_type( $id ) !== 'prenotazione' ) {
+                return new WP_Error( 'not_found', 'Prenotazione inesistente.', array( 'status' => 404 ) );
+            }
+
+            $params = $request->get_json_params();
+            if ( empty( $params ) ) $params = $request->get_body_params();
+
+            $source = get_post_meta( $id, 'pren_source', true );
+
+            // Whitelist campi manuali → meta key + sanitizzazione
+            $allowed = array(
+                'guest_name'    => 'pren_guest_name',
+                'guest_email'   => 'pren_guest_email',
+                'guest_phone'   => 'pren_guest_phone',
+                'guests'        => 'pren_guests',
+                'checkin_time'  => 'pren_checkin_time',
+                'checkout_time' => 'pren_checkout_time',
+                'payment'       => 'pren_payment',
+                'cleaning'      => 'pren_cleaning',
+                'notes'         => 'pren_notes',
+                'message'       => 'pren_message',
+                'status'        => 'pren_status',
+            );
+            // Le date sono modificabili SOLO sui blocchi manuali.
+            // Su Airbnb/Booking le date arrivano da iCal e non si toccano.
+            if ( $source === 'manual' ) {
+                $allowed['checkin']  = 'pren_checkin';
+                $allowed['checkout'] = 'pren_checkout';
+            }
+
+            $updated = array();
+            foreach ( $allowed as $in_key => $meta_key ) {
+                if ( ! array_key_exists( $in_key, $params ) ) continue;
+                $val = $params[ $in_key ];
+
+                if ( $in_key === 'guest_email' ) {
+                    $val = sanitize_email( $val );
+                } elseif ( $in_key === 'notes' || $in_key === 'message' ) {
+                    $val = sanitize_textarea_field( $val );
+                } elseif ( $in_key === 'guests' ) {
+                    $val = $val === '' ? '' : absint( $val );
+                } else {
+                    $val = sanitize_text_field( $val );
+                }
+
+                update_post_meta( $id, $meta_key, $val );
+                $updated[] = $in_key;
+            }
+
+            return rest_ensure_response( array(
+                'ok'       => true,
+                'updated'  => $updated,
+                'booking'  => lemura_agenda_serialize( get_post( $id ) ),
+            ) );
+        },
+    ) );
+
+    // ── POST /lemura-crm/v1/agenda/block?code=... ──────────────
+    // Crea un blocco manuale (date occupate). source=manual, status
+    // confirmed → blocca la disponibilità ed è esportato verso
+    // Airbnb/Booking dal feed iCal in uscita.
+    register_rest_route( 'lemura-crm/v1', '/agenda/block', array(
+        'methods'             => WP_REST_Server::CREATABLE, // POST
+        'permission_callback' => 'lemura_agenda_check_code',
+        'callback'            => function ( WP_REST_Request $request ) use ( $valid_units ) {
+            $params = $request->get_json_params();
+            if ( empty( $params ) ) $params = $request->get_body_params();
+
+            $unit     = sanitize_text_field( $params['unit']     ?? '' );
+            $checkin  = sanitize_text_field( $params['checkin']  ?? '' );
+            $checkout = sanitize_text_field( $params['checkout'] ?? '' );
+            $name     = sanitize_text_field( $params['guest_name'] ?? '' );
+            $notes    = sanitize_textarea_field( $params['notes'] ?? '' );
+
+            if ( ! in_array( $unit, $valid_units, true ) ) {
+                return new WP_Error( 'invalid_unit', 'Unità non valida.', array( 'status' => 422 ) );
+            }
+            if ( ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $checkin ) || ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $checkout ) ) {
+                return new WP_Error( 'invalid_dates', 'Date in formato YYYY-MM-DD obbligatorie.', array( 'status' => 422 ) );
+            }
+            if ( strtotime( $checkin ) >= strtotime( $checkout ) ) {
+                return new WP_Error( 'invalid_dates', 'Il check-out deve essere successivo al check-in.', array( 'status' => 422 ) );
+            }
+
+            // Conflitto con prenotazioni/blocchi già presenti (overlap)
+            $existing = get_posts( array(
+                'post_type'   => 'prenotazione',
+                'post_status' => 'publish',
+                'numberposts' => -1,
+                'meta_query'  => array(
+                    array( 'key' => 'pren_unit',   'value' => $unit ),
+                    array( 'key' => 'pren_status', 'value' => array( 'confirmed', 'pending' ), 'compare' => 'IN' ),
+                ),
+            ) );
+            foreach ( $existing as $p ) {
+                $ci = get_post_meta( $p->ID, 'pren_checkin',  true );
+                $co = get_post_meta( $p->ID, 'pren_checkout', true );
+                if ( $ci && $co && strtotime( $checkin ) < strtotime( $co ) && strtotime( $checkout ) > strtotime( $ci ) ) {
+                    return new WP_Error( 'overlap', 'Le date si sovrappongono a una prenotazione esistente.', array( 'status' => 409 ) );
+                }
+            }
+
+            $post_id = wp_insert_post( array(
+                'post_type'   => 'prenotazione',
+                'post_status' => 'publish',
+                'post_title'  => 'Blocco manuale — ' . $unit . ' — ' . $checkin,
+            ) );
+            if ( is_wp_error( $post_id ) ) {
+                return new WP_Error( 'insert_failed', 'Impossibile creare il blocco.', array( 'status' => 500 ) );
+            }
+
+            $meta = array(
+                'pren_unit'       => $unit,
+                'pren_checkin'    => $checkin,
+                'pren_checkout'   => $checkout,
+                'pren_status'     => 'confirmed',
+                'pren_source'     => 'manual',
+                'pren_guest_name' => $name !== '' ? $name : 'Blocco',
+                'pren_notes'      => $notes,
+            );
+            foreach ( $meta as $k => $v ) update_post_meta( $post_id, $k, $v );
+
+            return rest_ensure_response( array(
+                'ok'      => true,
+                'booking' => lemura_agenda_serialize( get_post( $post_id ) ),
+            ) );
+        },
+    ) );
+
+    // ── DELETE /lemura-crm/v1/agenda/{id}?code=... ─────────────
+    // Libera le date: elimina un blocco. Consentito SOLO sui
+    // blocchi manuali (source=manual). Airbnb/Booking gestiti da iCal.
+    register_rest_route( 'lemura-crm/v1', '/agenda/(?P<id>\d+)', array(
+        'methods'             => WP_REST_Server::DELETABLE, // DELETE
+        'permission_callback' => 'lemura_agenda_check_code',
+        'callback'            => function ( WP_REST_Request $request ) {
+            $id = (int) $request['id'];
+            if ( get_post_type( $id ) !== 'prenotazione' ) {
+                return new WP_Error( 'not_found', 'Prenotazione inesistente.', array( 'status' => 404 ) );
+            }
+            $source = get_post_meta( $id, 'pren_source', true );
+            if ( $source !== 'manual' ) {
+                return new WP_Error( 'not_deletable', 'Solo i blocchi manuali possono essere liberati da qui. Le prenotazioni Airbnb/Booking si gestiscono sulla piattaforma.', array( 'status' => 403 ) );
+            }
+            wp_delete_post( $id, true );
+            return rest_ensure_response( array( 'ok' => true, 'deleted' => $id ) );
+        },
+    ) );
+} );
