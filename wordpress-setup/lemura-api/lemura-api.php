@@ -2896,12 +2896,15 @@ function lemura_wl_waste_fields() {
     $out = array();
     foreach ( lemura_wl_waste_days() as $k => $lab ) {
         $out[] = array(
-            'key'      => "field_waste_{$k}",
-            'label'    => "Spazzatura — {$lab}",
-            'name'     => "waste_{$k}",
-            'type'     => 'select',
+            'key'        => "field_waste_{$k}",
+            'label'      => "Spazzatura — {$lab}",
+            'name'       => "waste_{$k}",
+            'type'       => 'select',
             'allow_null' => 1,
-            'choices'  => $choices,
+            'multiple'   => 1,
+            'ui'         => 1,
+            'instructions' => 'Puoi selezionare più tipi per lo stesso giorno.',
+            'choices'    => $choices,
         );
     }
     return $out;
@@ -2983,19 +2986,15 @@ add_action( 'acf/init', function () {
 
     acf_add_local_field_group( array(
         'key'    => 'group_welcome_luogo',
-        'title'  => 'Luogo / Ristorante',
-        'fields' => array_merge(
-            array(
-                array( 'key' => 'field_l_tipo', 'label' => 'Tipo', 'name' => 'l_tipo', 'type' => 'select', 'default_value' => 'poi', 'choices' => array( 'poi' => 'Punto di interesse', 'ristorante' => 'Ristorante', 'supermercato' => 'Supermercato', 'farmacia' => 'Farmacia' ) ),
-                array( 'key' => 'field_l_cat', 'label' => 'Categoria (POI)', 'name' => 'l_cat', 'type' => 'select', 'allow_null' => 1, 'choices' => array( 'beach' => 'Spiaggia', 'town' => 'Borgo / Città', 'nature' => 'Natura' ) ),
-                array( 'key' => 'field_l_coast', 'label' => 'Costa (spiagge)', 'name' => 'l_coast', 'type' => 'select', 'allow_null' => 1, 'choices' => array( 'adriatico' => 'Adriatico', 'ionio' => 'Ionio' ) ),
-                array( 'key' => 'field_l_zona', 'label' => 'Zona (ristoranti)', 'name' => 'l_zona', 'type' => 'select', 'allow_null' => 1, 'choices' => array( 'sternatia' => 'Sternatia', 'lecce' => 'Lecce', 'salento' => 'Salento' ) ),
-                array( 'key' => 'field_l_rtipo', 'label' => 'Tipo cucina (ristoranti)', 'name' => 'l_rtipo', 'type' => 'text' ),
-                array( 'key' => 'field_l_dist', 'label' => 'Distanza in auto (min)', 'name' => 'l_dist', 'type' => 'number' ),
-                array( 'key' => 'field_l_maps', 'label' => 'Query mappa (es. "Otranto")', 'name' => 'l_maps', 'type' => 'text' ),
-                array( 'key' => 'field_l_img', 'label' => 'Immagine', 'name' => 'l_img', 'type' => 'image', 'return_format' => 'url', 'preview_size' => 'medium' ),
-            ),
-            lemura_wl_i18n( 'ld', 'Descrizione' )
+        'title'  => 'Luogo (nome = titolo in alto)',
+        'fields' => array(
+            array( 'key' => 'field_l_tipo', 'label' => 'Tipo', 'name' => 'l_tipo', 'type' => 'select', 'default_value' => 'poi', 'choices' => array( 'poi' => 'Punto di interesse', 'ristorante' => 'Ristorante', 'supermercato' => 'Supermercato', 'farmacia' => 'Farmacia' ) ),
+            array( 'key' => 'field_l_cat', 'label' => 'Categoria (solo Punto di interesse)', 'name' => 'l_cat', 'type' => 'select', 'allow_null' => 1, 'choices' => array( 'beach' => 'Spiaggia', 'town' => 'Borgo / Città', 'nature' => 'Natura' ) ),
+            array( 'key' => 'field_l_coast', 'label' => 'Costa (solo spiagge)', 'name' => 'l_coast', 'type' => 'select', 'allow_null' => 1, 'choices' => array( 'adriatico' => 'Adriatico', 'ionio' => 'Ionio' ) ),
+            array( 'key' => 'field_l_zona', 'label' => 'Zona (ristoranti / supermercati / farmacie)', 'name' => 'l_zona', 'type' => 'select', 'allow_null' => 1, 'choices' => array( 'sternatia' => 'Sternatia', 'lecce' => 'Lecce', 'salento' => 'Salento' ) ),
+            array( 'key' => 'field_l_img', 'label' => 'Foto', 'name' => 'l_img', 'type' => 'image', 'return_format' => 'url', 'preview_size' => 'medium' ),
+            array( 'key' => 'field_l_link', 'label' => 'Link (sito, menu, prenotazione — facoltativo)', 'name' => 'l_link', 'type' => 'url' ),
+            array( 'key' => 'field_l_maps', 'label' => 'Google Maps (nome/indirizzo es. "Otranto", oppure link)', 'name' => 'l_maps', 'type' => 'text' ),
         ),
         'location' => array( array( array( 'param' => 'post_type', 'operator' => '==', 'value' => 'welcome_luogo' ) ) ),
     ) );
@@ -3094,16 +3093,14 @@ add_action( 'rest_api_init', function () {
             foreach ( get_posts( array( 'post_type' => 'welcome_luogo', 'post_status' => 'publish', 'numberposts' => -1, 'orderby' => 'menu_order title', 'order' => 'ASC' ) ) as $p ) {
                 $img = function_exists( 'get_field' ) ? get_field( 'l_img', $p->ID ) : get_post_meta( $p->ID, 'l_img', true );
                 $luoghi[] = array(
-                    'nome'         => get_the_title( $p ),
-                    'tipo'         => get_post_meta( $p->ID, 'l_tipo', true ),
-                    'categoria'    => get_post_meta( $p->ID, 'l_cat', true ),
-                    'coast'        => get_post_meta( $p->ID, 'l_coast', true ),
-                    'zona'         => get_post_meta( $p->ID, 'l_zona', true ),
-                    'cucina'       => get_post_meta( $p->ID, 'l_rtipo', true ),
-                    'distanza_min' => get_post_meta( $p->ID, 'l_dist', true ),
-                    'maps_query'   => get_post_meta( $p->ID, 'l_maps', true ),
-                    'immagine'     => $img ?: '',
-                    'descrizione'  => lemura_wl_pick( $p->ID, 'ld', $lang ),
+                    'nome'       => get_the_title( $p ),
+                    'tipo'       => get_post_meta( $p->ID, 'l_tipo', true ),
+                    'categoria'  => get_post_meta( $p->ID, 'l_cat', true ),
+                    'coast'      => get_post_meta( $p->ID, 'l_coast', true ),
+                    'zona'       => get_post_meta( $p->ID, 'l_zona', true ),
+                    'maps_query' => get_post_meta( $p->ID, 'l_maps', true ),
+                    'immagine'   => $img ?: '',
+                    'link'       => get_post_meta( $p->ID, 'l_link', true ),
                 );
             }
 

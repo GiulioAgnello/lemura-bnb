@@ -344,15 +344,16 @@ function InfoCard({ icon, title, text }) {
 
 function PoiCard({ p, t }) {
   return (
-    <a className="wl-poi" href={mapsUrl(p.maps_query || p.nome)} target="_blank" rel="noopener noreferrer">
-      {p.immagine ? <div className="wl-poi-img" style={{ backgroundImage: `url(${p.immagine})` }} /> : <div className="wl-poi-img wl-poi-noimg">🏞️</div>}
+    <div className="wl-poi">
+      {p.immagine ? <div className="wl-poi-img" style={{ backgroundImage: `url(${p.immagine})` }} /> : <div className="wl-poi-img wl-poi-noimg">📍</div>}
       <div className="wl-poi-body">
         <div className="wl-poi-name">{p.nome}</div>
-        {p.distanza_min ? <div className="wl-poi-dist">🚗 {p.distanza_min} {t.min}</div> : null}
-        {p.descrizione && <div className="wl-poi-desc">{p.descrizione}</div>}
-        <div className="wl-poi-map">📍 {t.openMap}</div>
+        <div className="wl-poi-actions">
+          {p.link && <a className="wl-poi-link" href={p.link} target="_blank" rel="noopener noreferrer">🔗 Link</a>}
+          <a className="wl-poi-maps" href={mapsUrl(p.maps_query || p.nome)} target="_blank" rel="noopener noreferrer">📍 {t.openMap}</a>
+        </div>
       </div>
-    </a>
+    </div>
   );
 }
 
@@ -368,13 +369,8 @@ function ZoneList({ title, luoghi, lang, t }) {
         return (
           <div key={z} className="mb-3">
             <h3 className="wl-subcat">{ZONE[z][lang] || ZONE[z].it}</h3>
-            <div className="wl-notes">
-              {items.map((r) => (
-                <a key={r.nome} className="wl-note wl-rest" href={mapsUrl(r.maps_query || r.nome)} target="_blank" rel="noopener noreferrer">
-                  <div className="wl-note-title">{r.nome} {r.cucina ? <span className="wl-rtag">{r.cucina}</span> : null}</div>
-                  {r.descrizione && <div className="wl-note-text">{r.descrizione}</div>}
-                </a>
-              ))}
+            <div className="wl-poi-grid">
+              {items.map((r) => <PoiCard key={r.nome} p={r} t={t} />)}
             </div>
           </div>
         );
@@ -387,22 +383,29 @@ function ZoneList({ title, luoghi, lang, t }) {
 function WasteCalendar({ waste, t, lang }) {
   if (!waste) return null;
   const sched = waste.schedule || {};
-  const days = DAY_ORDER.filter((d) => sched[d] && WASTE[sched[d]]);
+  const typesOf = (d) => {
+    const v = sched[d];
+    const arr = Array.isArray(v) ? v : v ? [v] : [];
+    return arr.filter((k) => WASTE[k]);
+  };
+  const days = DAY_ORDER.filter((d) => typesOf(d).length > 0);
   if (days.length === 0 && !waste.note) return null;
   return (
     <section className="wl-section">
       <h2 className="wl-sec-title">♻️ {t.waste}</h2>
       {days.length > 0 && (
         <div className="wl-waste">
-          {days.map((d) => {
-            const w = WASTE[sched[d]];
-            return (
-              <div key={d} className="wl-waste-row">
-                <span className="wl-waste-day">{DAYS[d][lang] || DAYS[d].it}</span>
-                <span className="wl-waste-type"><span className="wl-waste-dot" style={{ background: w.color }} />{w.icon} {w[lang] || w.it}</span>
-              </div>
-            );
-          })}
+          {days.map((d) => (
+            <div key={d} className="wl-waste-row">
+              <span className="wl-waste-day">{DAYS[d][lang] || DAYS[d].it}</span>
+              <span className="wl-waste-types">
+                {typesOf(d).map((k) => {
+                  const w = WASTE[k];
+                  return <span key={k} className="wl-waste-type"><span className="wl-waste-dot" style={{ background: w.color }} />{w.icon} {w[lang] || w.it}</span>;
+                })}
+              </span>
+            </div>
+          ))}
         </div>
       )}
       <div className="wl-waste-note">🌙 {waste.note || t.wasteHint}</div>
@@ -474,7 +477,8 @@ const wlCss = `
   .wl-waste-row{display:flex;align-items:center;justify-content:space-between;padding:.7rem 1rem;border-bottom:1px solid #f3f4f6;}
   .wl-waste-row:last-child{border-bottom:none;}
   .wl-waste-day{font-weight:600;}
-  .wl-waste-type{display:flex;align-items:center;gap:.5rem;font-weight:600;}
+  .wl-waste-types{display:flex;flex-wrap:wrap;gap:.4rem .8rem;justify-content:flex-end;}
+  .wl-waste-type{display:flex;align-items:center;gap:.4rem;font-weight:600;}
   .wl-waste-dot{width:12px;height:12px;border-radius:50%;display:inline-block;}
   .wl-waste-note{background:#fef9c3;border-radius:12px;padding:.7rem .9rem;font-size:.95rem;color:#713f12;}
   .wl-poi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.8rem;}
@@ -485,7 +489,9 @@ const wlCss = `
   .wl-poi-name{font-weight:700;font-size:1.05rem;}
   .wl-poi-dist{font-size:.85rem;color:#6b7280;margin:.15rem 0;}
   .wl-poi-desc{font-size:.92rem;line-height:1.5;color:#374151;margin:.3rem 0;}
-  .wl-poi-map{font-size:.88rem;color:#0d9488;font-weight:600;}
+  .wl-poi-actions{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.6rem;}
+  .wl-poi-maps{background:#0d9488;color:#fff;border-radius:10px;padding:.45rem .8rem;font-size:.9rem;font-weight:600;text-decoration:none;}
+  .wl-poi-link{border:1px solid #e5e7eb;border-radius:10px;padding:.45rem .8rem;font-size:.9rem;font-weight:600;color:#374151;text-decoration:none;}
   .wl-exp{display:inline-block;background:#111827;color:#fff;border-radius:12px;padding:.8rem 1.2rem;font-weight:600;text-decoration:none;}
   .wl-console{display:none;}
   @media (max-width:576px){
