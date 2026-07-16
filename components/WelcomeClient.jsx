@@ -112,7 +112,10 @@ export default function WelcomeClient() {
     const card = degToCard(weather.wind_direction_10m);
     const rule = data.wind_beach_rules.find((r) => r.wind.includes(card));
     if (!rule) return null;
-    const beaches = (data.luoghi || []).filter((l) => l.categoria === 'beach' && l.coast === rule.coast);
+    const fromLuoghi = (data.luoghi || [])
+      .filter((l) => l.categoria === 'beach' && l.coast === rule.coast)
+      .map((b) => ({ nome: b.nome, maps: b.maps_query || b.nome }));
+    const beaches = fromLuoghi.length ? fromLuoghi : (rule.beaches || []).map((b) => ({ nome: b.name, maps: b.maps }));
     return { card, rule, beaches };
   }, [weather, data]);
 
@@ -221,7 +224,7 @@ export default function WelcomeClient() {
             {windAdvice.beaches.length > 0 && (
               <div className="wl-beachchips">
                 {windAdvice.beaches.map((b) => (
-                  <a key={b.nome} className="wl-beachchip" href={mapsUrl(b.maps_query || b.nome)} target="_blank" rel="noopener noreferrer">📍 {b.nome}</a>
+                  <a key={b.nome} className="wl-beachchip" href={mapsUrl(b.maps)} target="_blank" rel="noopener noreferrer">📍 {b.nome}</a>
                 ))}
               </div>
             )}
@@ -293,16 +296,39 @@ export default function WelcomeClient() {
       {/* Console mobile */}
       <div className="wl-console">
         <button className={`wl-console-item${tab === 'casa' ? ' wl-console-item--active' : ''}`} onClick={() => setTab('casa')}>
-          <span className="wl-console-icn">🏠</span>{t.casa}
+          <IcoHome />{t.casa}
         </button>
         <button className={`wl-console-item${tab === 'exp' ? ' wl-console-item--active' : ''}`} onClick={() => setTab('exp')}>
-          <span className="wl-console-icn">🌊</span>{t.exp}
+          <IcoCompass />{t.exp}
         </button>
         <a className="wl-console-item wl-console-wa" href={waHref || '#'} target="_blank" rel="noopener noreferrer">
-          <span className="wl-console-icn">💬</span>{t.write}
+          <IcoWhatsApp />{t.write}
         </a>
       </div>
     </div>
+  );
+}
+
+/* Icone outline monocromatiche (ereditano il colore dal testo) */
+function IcoHome() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M3 11l9-7 9 7" /><path d="M5 10v10h14V10" /><path d="M10 20v-6h4v6" />
+    </svg>
+  );
+}
+function IcoCompass() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" /><polygon points="15.6 8.4 10.8 10.8 8.4 15.6 13.2 13.2" />
+    </svg>
+  );
+}
+function IcoWhatsApp() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.71.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.885-9.885 9.885M20.52 3.449C18.24 1.245 15.24 0 12.045 0 5.463 0 .104 5.359.101 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.652a11.882 11.882 0 005.71 1.454h.005c6.582 0 11.941-5.359 11.944-11.893a11.821 11.821 0 00-3.48-8.464z" />
+    </svg>
   );
 }
 

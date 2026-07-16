@@ -3003,17 +3003,33 @@ add_action( 'acf/init', function () {
 
 // ---- Regole vento → spiaggia (statiche, tradotte) ----
 function lemura_wl_wind_rules( $lang ) {
+    // Costa Adriatica (Est)
+    $b_baia    = array( 'name' => 'Baia dei Turchi', 'maps' => 'Baia dei Turchi, Otranto' );
+    $b_torre   = array( 'name' => "Torre dell'Orso", 'maps' => "Torre dell'Orso, Melendugno" );
+    $b_andrea  = array( 'name' => "Sant'Andrea", 'maps' => "Sant'Andrea, Melendugno" );
+    $b_alimini = array( 'name' => 'Laghi Alimini', 'maps' => 'Spiaggia Alimini, Otranto' );
+    $b_badisco = array( 'name' => 'Porto Badisco', 'maps' => 'Porto Badisco, Otranto' );
+    $b_frassa  = array( 'name' => 'Frassanito', 'maps' => 'Frassanito, Otranto' );
+    // Costa Ionica (Ovest)
+    $b_gallip  = array( 'name' => 'Gallipoli — Baia Verde', 'maps' => 'Baia Verde, Gallipoli' );
+    $b_cesareo = array( 'name' => 'Porto Cesareo', 'maps' => 'Porto Cesareo' );
+    $b_pesco   = array( 'name' => 'Pescoluse (Maldive del Salento)', 'maps' => 'Spiaggia di Pescoluse, Salve' );
+    $b_punta   = array( 'name' => 'Punta Prosciutto', 'maps' => 'Punta Prosciutto, Porto Cesareo' );
+    $b_lapillo = array( 'name' => 'Torre Lapillo', 'maps' => 'Torre Lapillo, Porto Cesareo' );
+    $b_ugento  = array( 'name' => 'Marina di Ugento', 'maps' => 'Marina di Ugento' );
+    $b_sangiov = array( 'name' => 'Torre San Giovanni', 'maps' => 'Torre San Giovanni, Ugento' );
+
     $rules = array(
-        array( 'coast' => 'adriatico', 'wind' => array( 'W', 'NW', 'SW' ),
+        array( 'coast' => 'adriatico', 'wind' => array( 'W', 'NW', 'SW' ), 'beaches' => array( $b_baia, $b_torre, $b_andrea, $b_alimini, $b_badisco ),
             'wind_label'  => array( 'it' => 'Ovest / Maestrale / Libeccio', 'en' => 'West / Mistral', 'fr' => 'Ouest / Mistral', 'de' => 'West / Mistral', 'es' => 'Oeste / Mistral' ),
             'coast_label' => array( 'it' => 'Costa Adriatica (Est) — riparata', 'en' => 'Adriatic coast (East) — sheltered', 'fr' => 'Côte Adriatique (Est) — abritée', 'de' => 'Adriaküste (Ost) — geschützt', 'es' => 'Costa Adriática (Este) — resguardada' ) ),
-        array( 'coast' => 'ionio', 'wind' => array( 'E', 'NE', 'SE' ),
+        array( 'coast' => 'ionio', 'wind' => array( 'E', 'NE', 'SE' ), 'beaches' => array( $b_punta, $b_lapillo, $b_cesareo, $b_gallip, $b_pesco ),
             'wind_label'  => array( 'it' => 'Est / Grecale / Scirocco', 'en' => 'East / Sirocco', 'fr' => 'Est / Sirocco', 'de' => 'Ost / Schirokko', 'es' => 'Este / Siroco' ),
             'coast_label' => array( 'it' => 'Costa Ionica (Ovest) — riparata', 'en' => 'Ionian coast (West) — sheltered', 'fr' => 'Côte Ionienne (Ouest) — abritée', 'de' => 'Ionische Küste (West) — geschützt', 'es' => 'Costa Jónica (Oeste) — resguardada' ) ),
-        array( 'coast' => 'ionio', 'wind' => array( 'N' ),
+        array( 'coast' => 'ionio', 'wind' => array( 'N' ), 'beaches' => array( $b_pesco, $b_ugento, $b_sangiov, $b_gallip ),
             'wind_label'  => array( 'it' => 'Nord / Tramontana', 'en' => 'North / Tramontana', 'fr' => 'Nord / Tramontane', 'de' => 'Nord / Tramontana', 'es' => 'Norte / Tramontana' ),
             'coast_label' => array( 'it' => 'Ionio sud — più riparato', 'en' => 'Southern Ionian — more sheltered', 'fr' => 'Ionienne sud — plus abritée', 'de' => 'Südliche Ionische — geschützter', 'es' => 'Jónica sur — más resguardada' ) ),
-        array( 'coast' => 'adriatico', 'wind' => array( 'S' ),
+        array( 'coast' => 'adriatico', 'wind' => array( 'S' ), 'beaches' => array( $b_baia, $b_torre, $b_andrea, $b_frassa ),
             'wind_label'  => array( 'it' => 'Sud / Ostro', 'en' => 'South / Ostro', 'fr' => 'Sud / Ostro', 'de' => 'Süd / Ostro', 'es' => 'Sur / Ostro' ),
             'coast_label' => array( 'it' => 'Adriatico nord — più riparato', 'en' => 'Northern Adriatic — more sheltered', 'fr' => 'Adriatique nord — plus abritée', 'de' => 'Nördliche Adria — geschützter', 'es' => 'Adriático norte — más resguardado' ) ),
     );
@@ -3022,6 +3038,7 @@ function lemura_wl_wind_rules( $lang ) {
         $out[] = array(
             'wind'        => $r['wind'],
             'coast'       => $r['coast'],
+            'beaches'     => $r['beaches'],
             'wind_label'  => $r['wind_label'][ $lang ] ?? $r['wind_label']['it'],
             'coast_label' => $r['coast_label'][ $lang ] ?? $r['coast_label']['it'],
         );
