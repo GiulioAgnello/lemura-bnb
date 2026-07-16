@@ -2,7 +2,9 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 
-const CRM = process.env.NEXT_PUBLIC_CRM_API_URL;
+// Chiamate al proxy same-origin (app/api/agenda) per evitare il blocco
+// cross-origin (503) di SiteGround sulle richieste dirette dal browser.
+const CRM = '/api/agenda';
 
 /* ------------------------------------------------------------------ */
 /* Costanti / helper                                                   */
@@ -75,7 +77,7 @@ export default function AgendaClient() {
     setLoading(true); setError('');
     try {
       const from = iso(addDays(today(), -1));
-      const res = await fetch(`${CRM}/agenda?code=${encodeURIComponent(c)}&from=${from}`, { cache: 'no-store' });
+      const res = await fetch(`${CRM}?code=${encodeURIComponent(c)}&from=${from}`, { cache: 'no-store' });
       if (res.status === 401) { setError('Codice di accesso non valido.'); setAuthed(false); setLoading(false); return; }
       if (!res.ok) throw new Error(`Errore ${res.status}`);
       const data = await res.json();
@@ -100,7 +102,7 @@ export default function AgendaClient() {
 
   /* --- azioni scrittura --- */
   const saveBooking = async (id, patch) => {
-    const res = await fetch(`${CRM}/agenda/${id}?code=${encodeURIComponent(code)}`, {
+    const res = await fetch(`${CRM}/${id}?code=${encodeURIComponent(code)}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(patch),
@@ -112,13 +114,13 @@ export default function AgendaClient() {
   };
 
   const deleteBooking = async (id) => {
-    const res = await fetch(`${CRM}/agenda/${id}?code=${encodeURIComponent(code)}`, { method: 'DELETE' });
+    const res = await fetch(`${CRM}/${id}?code=${encodeURIComponent(code)}`, { method: 'DELETE' });
     if (!res.ok) throw new Error('delete');
     setBookings((b) => b.filter((x) => x.id !== id));
   };
 
   const createBlock = async (payload) => {
-    const res = await fetch(`${CRM}/agenda/block?code=${encodeURIComponent(code)}`, {
+    const res = await fetch(`${CRM}/block?code=${encodeURIComponent(code)}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
