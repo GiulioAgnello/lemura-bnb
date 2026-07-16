@@ -7,6 +7,9 @@ const AIRBNB_URL = process.env.NEXT_PUBLIC_AIRBNB_URL || '#';
 export default function Footer() {
   const pathname = usePathname();
 
+  // Sulla pagina welcome: nessun footer.
+  if (pathname.startsWith('/welcome')) return null;
+
   // Sulla pagina gestionale /agenda: solo la riga finale (crediti e diritti).
   if (pathname.startsWith('/agenda')) {
     return (

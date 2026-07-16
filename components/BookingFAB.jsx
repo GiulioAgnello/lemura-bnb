@@ -19,8 +19,8 @@ export default function BookingFAB() {
     return () => window.removeEventListener('keydown', handler);
   }, [open]);
 
-  // Sulla pagina gestionale /agenda il widget non deve comparire.
-  if (pathname.startsWith('/agenda')) return null;
+  // Su /agenda e /welcome il widget non deve comparire.
+  if (pathname.startsWith('/agenda') || pathname.startsWith('/welcome')) return null;
 
   return (
     <>

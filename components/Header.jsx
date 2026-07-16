@@ -18,10 +18,15 @@ export default function Header() {
   const pathname = usePathname();
   const brand = getBrandForPath(pathname);
   const isAgenda = pathname.startsWith('/agenda');
+  const isWelcome = pathname.startsWith('/welcome');
 
   useEffect(() => {
     import('bootstrap/dist/js/bootstrap.bundle.min.js');
   }, []);
+
+  // Pagina ospiti /welcome: l'header del sito non compare
+  // (la pagina ha una sua barra compatta con logo + Benvenuti + lingua).
+  if (isWelcome) return null;
 
   // Header ridotto per la pagina gestionale /agenda:
   // nessuna voce di menu, solo il logo e la scritta "Agenda arrivi".

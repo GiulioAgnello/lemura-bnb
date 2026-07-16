@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 
 // Coordinate Sternatia (per il meteo Open-Meteo)
 const LAT = 40.2208;
@@ -16,11 +16,11 @@ const LANGS = [
 
 // Etichette d'interfaccia (le UI, non i contenuti che arrivano tradotti dal backend)
 const T = {
-  it: { choose: 'Scegli la lingua', stay: 'Il tuo soggiorno', checkin: 'Check-in', checkout: 'Check-out', access: 'Come arrivare', wifi: 'WiFi', network: 'Rete', password: 'Password', copy: 'Copia', copied: 'Copiato!', weather: 'Meteo & spiaggia', windNow: 'Vento ora', advised: 'Spiaggia consigliata', rules: 'Regole della casa', discover: 'Scopri il Salento', beaches: 'Spiagge', towns: 'Borghi e città', nature: 'Natura', restaurants: 'Dove mangiare', experiences: 'Esperienze', expCta: 'Scopri le esperienze', openMap: 'Apri mappa', changeLang: 'Lingua', min: 'min', loading: 'Caricamento…' },
-  en: { choose: 'Choose your language', stay: 'Your stay', checkin: 'Check-in', checkout: 'Check-out', access: 'Getting here', wifi: 'WiFi', network: 'Network', password: 'Password', copy: 'Copy', copied: 'Copied!', weather: 'Weather & beach', windNow: 'Wind now', advised: 'Recommended beach', rules: 'House rules', discover: 'Discover Salento', beaches: 'Beaches', towns: 'Towns & villages', nature: 'Nature', restaurants: 'Where to eat', experiences: 'Experiences', expCta: 'Discover the experiences', openMap: 'Open map', changeLang: 'Language', min: 'min', loading: 'Loading…' },
-  fr: { choose: 'Choisissez la langue', stay: 'Votre séjour', checkin: 'Arrivée', checkout: 'Départ', access: 'Comment venir', wifi: 'WiFi', network: 'Réseau', password: 'Mot de passe', copy: 'Copier', copied: 'Copié !', weather: 'Météo & plage', windNow: 'Vent', advised: 'Plage conseillée', rules: 'Règles de la maison', discover: 'Découvrir le Salento', beaches: 'Plages', towns: 'Villes et villages', nature: 'Nature', restaurants: 'Où manger', experiences: 'Expériences', expCta: 'Découvrir les expériences', openMap: 'Ouvrir la carte', changeLang: 'Langue', min: 'min', loading: 'Chargement…' },
-  de: { choose: 'Sprache wählen', stay: 'Ihr Aufenthalt', checkin: 'Check-in', checkout: 'Check-out', access: 'Anreise', wifi: 'WLAN', network: 'Netzwerk', password: 'Passwort', copy: 'Kopieren', copied: 'Kopiert!', weather: 'Wetter & Strand', windNow: 'Wind jetzt', advised: 'Empfohlener Strand', rules: 'Hausregeln', discover: 'Salento entdecken', beaches: 'Strände', towns: 'Städte & Dörfer', nature: 'Natur', restaurants: 'Wo essen', experiences: 'Erlebnisse', expCta: 'Erlebnisse entdecken', openMap: 'Karte öffnen', changeLang: 'Sprache', min: 'Min', loading: 'Laden…' },
-  es: { choose: 'Elige el idioma', stay: 'Tu estancia', checkin: 'Entrada', checkout: 'Salida', access: 'Cómo llegar', wifi: 'WiFi', network: 'Red', password: 'Contraseña', copy: 'Copiar', copied: '¡Copiado!', weather: 'Clima y playa', windNow: 'Viento', advised: 'Playa recomendada', rules: 'Normas de la casa', discover: 'Descubre el Salento', beaches: 'Playas', towns: 'Pueblos y ciudades', nature: 'Naturaleza', restaurants: 'Dónde comer', experiences: 'Experiencias', expCta: 'Descubre las experiencias', openMap: 'Abrir mapa', changeLang: 'Idioma', min: 'min', loading: 'Cargando…' },
+  it: { choose: 'Scegli la lingua', stay: 'Il tuo soggiorno', checkin: 'Check-in', checkout: 'Check-out', access: 'Come arrivare', wifi: 'WiFi', network: 'Rete', password: 'Password', copy: 'Copia', copied: 'Copiato!', weather: 'Meteo & spiaggia', windNow: 'Vento ora', advised: 'Spiaggia consigliata', rules: 'Regole della casa', discover: 'Scopri il Salento', beaches: 'Spiagge', towns: 'Borghi e città', nature: 'Natura', restaurants: 'Dove mangiare', experiences: 'Esperienze', expCta: 'Scopri le esperienze', openMap: 'Apri mappa', changeLang: 'Lingua', min: 'min', loading: 'Caricamento…', greet: 'Benvenuti', thanks: 'Grazie per averci scelto' },
+  en: { choose: 'Choose your language', stay: 'Your stay', checkin: 'Check-in', checkout: 'Check-out', access: 'Getting here', wifi: 'WiFi', network: 'Network', password: 'Password', copy: 'Copy', copied: 'Copied!', weather: 'Weather & beach', windNow: 'Wind now', advised: 'Recommended beach', rules: 'House rules', discover: 'Discover Salento', beaches: 'Beaches', towns: 'Towns & villages', nature: 'Nature', restaurants: 'Where to eat', experiences: 'Experiences', expCta: 'Discover the experiences', openMap: 'Open map', changeLang: 'Language', min: 'min', loading: 'Loading…', greet: 'Welcome', thanks: 'Thank you for choosing us' },
+  fr: { choose: 'Choisissez la langue', stay: 'Votre séjour', checkin: 'Arrivée', checkout: 'Départ', access: 'Comment venir', wifi: 'WiFi', network: 'Réseau', password: 'Mot de passe', copy: 'Copier', copied: 'Copié !', weather: 'Météo & plage', windNow: 'Vent', advised: 'Plage conseillée', rules: 'Règles de la maison', discover: 'Découvrir le Salento', beaches: 'Plages', towns: 'Villes et villages', nature: 'Nature', restaurants: 'Où manger', experiences: 'Expériences', expCta: 'Découvrir les expériences', openMap: 'Ouvrir la carte', changeLang: 'Langue', min: 'min', loading: 'Chargement…', greet: 'Bienvenue', thanks: 'Merci de nous avoir choisis' },
+  de: { choose: 'Sprache wählen', stay: 'Ihr Aufenthalt', checkin: 'Check-in', checkout: 'Check-out', access: 'Anreise', wifi: 'WLAN', network: 'Netzwerk', password: 'Passwort', copy: 'Kopieren', copied: 'Kopiert!', weather: 'Wetter & Strand', windNow: 'Wind jetzt', advised: 'Empfohlener Strand', rules: 'Hausregeln', discover: 'Salento entdecken', beaches: 'Strände', towns: 'Städte & Dörfer', nature: 'Natur', restaurants: 'Wo essen', experiences: 'Erlebnisse', expCta: 'Erlebnisse entdecken', openMap: 'Karte öffnen', changeLang: 'Sprache', min: 'Min', loading: 'Laden…', greet: 'Willkommen', thanks: 'Danke, dass Sie uns gewählt haben' },
+  es: { choose: 'Elige el idioma', stay: 'Tu estancia', checkin: 'Entrada', checkout: 'Salida', access: 'Cómo llegar', wifi: 'WiFi', network: 'Red', password: 'Contraseña', copy: 'Copiar', copied: '¡Copiado!', weather: 'Clima y playa', windNow: 'Viento', advised: 'Playa recomendada', rules: 'Normas de la casa', discover: 'Descubre el Salento', beaches: 'Playas', towns: 'Pueblos y ciudades', nature: 'Naturaleza', restaurants: 'Dónde comer', experiences: 'Experiencias', expCta: 'Descubre las experiencias', openMap: 'Abrir mapa', changeLang: 'Idioma', min: 'min', loading: 'Cargando…', greet: 'Bienvenidos', thanks: 'Gracias por elegirnos' },
 };
 
 const NOTE_CAT = {
@@ -48,6 +48,18 @@ export default function WelcomeClient() {
   const [weather, setWeather] = useState(null);
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [splash, setSplash] = useState(false);
+  const splashShown = useRef(false);
+
+  // Splash iniziale (~2s) solo alla prima apertura, non al cambio lingua.
+  useEffect(() => {
+    if (lang && !splashShown.current) {
+      splashShown.current = true;
+      setSplash(true);
+      const tmr = setTimeout(() => setSplash(false), 2200);
+      return () => clearTimeout(tmr);
+    }
+  }, [lang]);
 
   // Lingua salvata
   useEffect(() => {
@@ -122,9 +134,19 @@ export default function WelcomeClient() {
     <div className="wl">
       <style>{wlCss}</style>
 
-      {/* Barra lingua */}
+      {/* Splash iniziale */}
+      <div className={`wl-splash${splash ? '' : ' wl-splash--hide'}`} aria-hidden={!splash}>
+        <img className="wl-splash-logo" src="/logo_no_background.png" alt="Le Mura degli Angeli" />
+        <div className="wl-splash-brand">Le Mura degli Angeli</div>
+        <div className="wl-splash-text">{t.thanks}</div>
+      </div>
+
+      {/* Barra unica: logo + Benvenuti + lingua */}
       <div className="wl-topbar">
-        <span className="wl-brand">Le Mura degli Angeli</span>
+        <div className="wl-hdr-brand">
+          <img className="wl-hdr-logo" src="/logo_no_background.png" alt="Le Mura degli Angeli" />
+          <span className="wl-hdr-greet">{t.greet}</span>
+        </div>
         <select className="wl-langsel" value={lang} onChange={(e) => pick(e.target.value)} aria-label={t.changeLang}>
           {LANGS.map((l) => <option key={l.code} value={l.code}>{l.flag} {l.label}</option>)}
         </select>
@@ -132,12 +154,8 @@ export default function WelcomeClient() {
 
       {loading && <p className="text-center text-muted py-5">{t.loading}</p>}
 
-      {/* Benvenuto */}
-      {info.welcome && (
-        <section className="wl-hero">
-          <h1>{t.stay}</h1>
-          <p>{info.welcome}</p>
-        </section>
+      {info.welcome && info.welcome.trim().length > 12 && (
+        <p className="wl-welcome-msg">{info.welcome}</p>
       )}
 
       <div className="wl-body">
@@ -319,12 +337,18 @@ const gateCss = `
 
 const wlCss = `
   .wl{max-width:760px;margin:0 auto;color:#1f2937;}
-  .wl-topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:.5rem;padding:.7rem 1rem;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);border-bottom:1px solid #eee;}
-  .wl-brand{font-family:var(--font-display,serif);font-weight:700;font-size:1.05rem;}
+  .wl-splash{position:fixed;inset:0;z-index:3000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;background:linear-gradient(135deg,#0d9488,#111827);color:#fff;transition:opacity .7s ease;opacity:1;}
+  .wl-splash--hide{opacity:0;pointer-events:none;}
+  .wl-splash-logo{height:104px;width:104px;border-radius:50%;background:#fff;padding:14px;object-fit:contain;box-shadow:0 10px 34px rgba(0,0,0,.3);animation:wlPop .6s ease;}
+  .wl-splash-brand{font-family:var(--font-display,serif);font-size:1.5rem;font-weight:700;}
+  .wl-splash-text{font-size:1.1rem;opacity:.92;text-align:center;padding:0 1.5rem;}
+  @keyframes wlPop{from{transform:scale(.8);opacity:0;}to{transform:scale(1);opacity:1;}}
+  .wl-topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:.5rem;padding:.5rem 1rem;background:rgba(255,255,255,.95);backdrop-filter:blur(8px);border-bottom:1px solid #eee;}
+  .wl-hdr-brand{display:flex;align-items:center;gap:.6rem;}
+  .wl-hdr-logo{height:38px;width:auto;}
+  .wl-hdr-greet{font-family:var(--font-display,serif);font-weight:700;font-size:1.35rem;color:#111827;}
   .wl-langsel{border:1px solid #e5e7eb;border-radius:10px;padding:.35rem .5rem;font-size:.95rem;}
-  .wl-hero{background:linear-gradient(135deg,#0d9488,#0f766e);color:#fff;padding:2rem 1.2rem;text-align:center;}
-  .wl-hero h1{font-family:var(--font-display,serif);font-size:1.6rem;margin:0 0 .5rem;}
-  .wl-hero p{font-size:1.05rem;line-height:1.6;margin:0;opacity:.95;}
+  .wl-welcome-msg{max-width:640px;margin:1.2rem auto .2rem;padding:0 1.2rem;text-align:center;font-size:1.05rem;line-height:1.6;color:#374151;}
   .wl-body{padding:1.2rem 1rem 3rem;}
   .wl-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.7rem;margin-bottom:1rem;}
   .wl-card{background:#fff;border:1px solid #eef0f2;border-radius:16px;padding:1rem;}
