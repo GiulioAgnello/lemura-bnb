@@ -492,6 +492,7 @@ const wlCss = `
     .wl-tabs{display:none;}
     .wl-body{padding-bottom:5.5rem;}
     .wl-sec-title{font-size:1.2rem;}
+    .wl-cards{grid-template-columns:1fr;}
     .wl-poi-grid{grid-template-columns:1fr;}
     .wl-console{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;background:#fff;border-top:1px solid #e5e7eb;box-shadow:0 -4px 16px rgba(0,0,0,.08);}
     .wl-console-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:.55rem 0 .7rem;border:none;background:none;font-size:.72rem;font-weight:600;color:#6b7280;text-decoration:none;cursor:pointer;}
