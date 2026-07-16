@@ -17,10 +17,29 @@ const navItems = [
 export default function Header() {
   const pathname = usePathname();
   const brand = getBrandForPath(pathname);
+  const isAgenda = pathname.startsWith('/agenda');
 
   useEffect(() => {
     import('bootstrap/dist/js/bootstrap.bundle.min.js');
   }, []);
+
+  // Header ridotto per la pagina gestionale /agenda:
+  // nessuna voce di menu, solo il logo e la scritta "Agenda arrivi".
+  if (isAgenda) {
+    return (
+      <nav className="navbar navbar-bnb sticky-top">
+        <div className="container d-flex align-items-center justify-content-between">
+          <Link className="navbar-brand navbar-brand-bnb" href="/agenda">
+            <img className="logoFace" src={brand.logo} alt={brand.name} key={brand.logo} />
+            {brand.name}
+          </Link>
+          <span className="navbar-text fw-semibold text-uppercase" style={{ letterSpacing: '0.06em' }}>
+            Agenda arrivi
+          </span>
+        </div>
+      </nav>
+    );
+  }
 
   return (
     <nav className="navbar navbar-expand-lg navbar-bnb sticky-top">

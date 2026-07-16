@@ -1,8 +1,10 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import BookingWidget from './BookingWidget';
 
 export default function BookingFAB() {
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -16,6 +18,9 @@ export default function BookingFAB() {
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [open]);
+
+  // Sulla pagina gestionale /agenda il widget non deve comparire.
+  if (pathname.startsWith('/agenda')) return null;
 
   return (
     <>

@@ -1,8 +1,29 @@
+'use client';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 const AIRBNB_URL = process.env.NEXT_PUBLIC_AIRBNB_URL || '#';
 
 export default function Footer() {
+  const pathname = usePathname();
+
+  // Sulla pagina gestionale /agenda: solo la riga finale (crediti e diritti).
+  if (pathname.startsWith('/agenda')) {
+    return (
+      <footer className="footer-bnb">
+        <div className="container">
+          <div className="text-center py-3" style={{ fontSize: '0.8rem' }}>
+            <span>
+              &copy; {new Date().getFullYear()} Le Mura degli Angeli — CIN: IT075080C200098254
+            </span>
+            <span className="mx-2">·</span>
+            <span>Sito realizzato da Giulio Agnello</span>
+          </div>
+        </div>
+      </footer>
+    );
+  }
+
   return (
     <footer className="footer-bnb">
       <div className="container">

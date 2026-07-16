@@ -171,18 +171,50 @@ export default function AgendaClient() {
   /* App                                                                 */
   /* ------------------------------------------------------------------ */
   return (
-    <div className="container-fluid py-4" style={{ maxWidth: 1100 }}>
+    <div className="agenda-wrap">
+      <style>{`
+        .agenda-wrap{max-width:1100px;margin:0 auto;padding:1.5rem 1rem 4rem;}
+        .agenda-title{font-size:1.7rem;font-weight:700;}
+        .agenda-toolbar .form-select,.agenda-toolbar .btn{font-size:1rem;padding:.5rem .9rem;}
+        .agenda-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+        .agenda-weekday{text-align:center;font-weight:600;color:#6b7280;font-size:.85rem;}
+        .agenda-cell{min-height:92px;border-radius:8px;padding:5px;border:1px solid #eef0f2;background:#fff;overflow:hidden;}
+        .agenda-cell--today{border:2px solid #111827;}
+        .agenda-cell--past{background:#fafafa;opacity:.55;}
+        .agenda-daynum{font-size:.9rem;font-weight:700;color:#4b5563;}
+        .agenda-chip{font-size:12px;line-height:1.4;color:#fff;border-radius:5px;padding:2px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;}
+        .agenda-more{font-size:11px;color:#6b7280;}
+        .agenda-arr-day{font-size:1.65rem;font-weight:700;line-height:1;}
+        .agenda-arr-name{font-size:1.05rem;font-weight:600;}
+        .agenda-arr-sub{font-size:.95rem;color:#6b7280;}
+        .agenda-section{font-size:.9rem;letter-spacing:.05em;}
+        @media (max-width:576px){
+          .agenda-wrap{padding:1rem .7rem 3rem;}
+          .agenda-title{font-size:1.4rem;}
+          .agenda-toolbar{gap:.4rem !important;}
+          .agenda-toolbar .form-select,.agenda-toolbar .btn{font-size:.95rem;padding:.5rem .7rem;}
+          .agenda-cal-grid{gap:3px;}
+          .agenda-weekday{font-size:.72rem;}
+          .agenda-cell{min-height:66px;padding:3px;border-radius:6px;}
+          .agenda-daynum{font-size:.82rem;}
+          .agenda-chip{font-size:11px;padding:1px 4px;}
+          .agenda-arr-day{font-size:1.45rem;}
+          .agenda-arr-name{font-size:1rem;}
+          .agenda-arr-sub{font-size:.9rem;}
+        }
+      `}</style>
+
       {/* Barra superiore */}
-      <div className="d-flex flex-wrap align-items-center gap-2 mb-4">
-        <h1 className="h3 mb-0 me-auto">Agenda</h1>
-        <select className="form-select form-select-sm" style={{ width: 'auto' }} value={filterUnit} onChange={(e) => setFilterUnit(e.target.value)}>
+      <div className="agenda-toolbar d-flex flex-wrap align-items-center gap-2 mb-4">
+        <h1 className="agenda-title mb-0 me-auto">Agenda</h1>
+        <select className="form-select" style={{ width: 'auto' }} value={filterUnit} onChange={(e) => setFilterUnit(e.target.value)}>
           <option value="all">Tutte le unità</option>
           {UNITS.map((u) => <option key={u.key} value={u.key}>{u.label}</option>)}
         </select>
-        <button className="btn btn-sm btn-outline-secondary" onClick={() => load()} disabled={loading}>
+        <button className="btn btn-outline-secondary" onClick={() => load()} disabled={loading}>
           {loading ? '…' : '↻ Aggiorna'}
         </button>
-        <button className="btn btn-sm btn-dark" onClick={() => setShowBlock(true)}>+ Blocca date</button>
+        <button className="btn btn-dark" onClick={() => setShowBlock(true)}>+ Blocca date</button>
       </div>
 
       {error && <div className="alert alert-warning py-2">{error}</div>}
@@ -263,19 +295,19 @@ function ArrivalRow({ b, onOpen }) {
   const pay = PAYMENT[b.payment];
   const cl = CLEANING[b.cleaning];
   return (
-    <button className="list-group-item list-group-item-action d-flex align-items-center gap-3 text-start" onClick={onOpen}>
-      <div className="text-center" style={{ minWidth: 54 }}>
-        <div className="fw-bold" style={{ fontSize: '1.3rem', lineHeight: 1 }}>{parseISO(b.checkin).getDate()}</div>
-        <div className="small text-muted text-uppercase">{MONTHS[parseISO(b.checkin).getMonth()].slice(0, 3)}</div>
+    <button className="list-group-item list-group-item-action d-flex align-items-center gap-3 text-start py-3" onClick={onOpen}>
+      <div className="text-center" style={{ minWidth: 52 }}>
+        <div className="agenda-arr-day">{parseISO(b.checkin).getDate()}</div>
+        <div className="text-muted text-uppercase" style={{ fontSize: '.8rem' }}>{MONTHS[parseISO(b.checkin).getMonth()].slice(0, 3)}</div>
       </div>
       <div style={{ width: 4, alignSelf: 'stretch', background: u.color, borderRadius: 4 }} />
       <div className="flex-grow-1">
-        <div className="fw-semibold">{b.guest_name || 'Ospite'}</div>
-        <div className="small text-muted">{u.label} · {daysBetween(b.checkin, b.checkout)} notti · fino al {fmtShort(b.checkout)}</div>
+        <div className="agenda-arr-name">{b.guest_name || 'Ospite'}</div>
+        <div className="agenda-arr-sub">{u.label} · {daysBetween(b.checkin, b.checkout)} notti · fino al {fmtShort(b.checkout)}</div>
       </div>
       <div className="text-end">
         <SourceBadge source={b.source} />
-        <div className="small mt-1">
+        <div className="mt-1">
           {pay && <Dot color={pay.color} title={pay.label} />}
           {cl && <Dot color={cl.color} title={cl.label} />}
         </div>
@@ -312,38 +344,30 @@ function Calendar({ cursor, setCursor, bookings, onOpen, onPickDay }) {
         <button className="btn btn-sm btn-outline-secondary" onClick={() => setCursor(m === 11 ? { y: y + 1, m: 0 } : { y, m: m + 1 })}>›</button>
         <button className="btn btn-sm btn-link ms-2" onClick={() => { const d = today(); setCursor({ y: d.getFullYear(), m: d.getMonth() }); }}>Oggi</button>
       </div>
-      <div className="d-grid" style={{ gridTemplateColumns: 'repeat(7,1fr)', gap: 4 }}>
-        {WEEKDAYS.map((w) => <div key={w} className="text-center small text-muted fw-semibold">{w}</div>)}
+      <div className="agenda-cal-grid">
+        {WEEKDAYS.map((w) => <div key={w} className="agenda-weekday">{w}</div>)}
         {cells.map((c, i) => {
           if (!c) return <div key={i} />;
           const isToday = c.dISO === tISO;
           const isPast = c.dISO < tISO;
+          const cls = `agenda-cell${isToday ? ' agenda-cell--today' : ''}${isPast ? ' agenda-cell--past' : ''}`;
           return (
-            <div key={i} onClick={() => c.occ.length === 0 && onPickDay(c.dISO)}
-              style={{
-                minHeight: 74, borderRadius: 8, padding: 4, cursor: c.occ.length === 0 ? 'pointer' : 'default',
-                border: isToday ? '2px solid #111827' : '1px solid #f0f0f0',
-                background: isPast ? '#fafafa' : '#fff', opacity: isPast ? 0.65 : 1,
-              }}>
-              <div className="small fw-semibold text-muted">{c.day}</div>
+            <div key={i} className={cls} onClick={() => c.occ.length === 0 && onPickDay(c.dISO)}
+              style={{ cursor: c.occ.length === 0 ? 'pointer' : 'default' }}>
+              <div className="agenda-daynum">{c.day}</div>
               <div className="d-flex flex-column gap-1 mt-1">
                 {c.occ.slice(0, 3).map((b) => {
                   const u = unitInfo(b.unit);
                   const isArr = b.checkin === c.dISO;
                   return (
-                    <div key={b.id} onClick={(e) => { e.stopPropagation(); onOpen(b); }}
+                    <div key={b.id} className="agenda-chip" onClick={(e) => { e.stopPropagation(); onOpen(b); }}
                       title={`${u.label} · ${b.guest_name || 'Ospite'}`}
-                      style={{
-                        fontSize: 10, lineHeight: 1.3, color: '#fff', background: u.color,
-                        borderRadius: 4, padding: '1px 4px', cursor: 'pointer', whiteSpace: 'nowrap',
-                        overflow: 'hidden', textOverflow: 'ellipsis',
-                        borderLeft: isArr ? '3px solid rgba(255,255,255,.85)' : 'none',
-                      }}>
+                      style={{ background: u.color, borderLeft: isArr ? '3px solid rgba(255,255,255,.85)' : 'none' }}>
                       {isArr ? '▸ ' : ''}{(b.guest_name || 'Ospite').split(' ')[0]}
                     </div>
                   );
                 })}
-                {c.occ.length > 3 && <div className="small text-muted" style={{ fontSize: 10 }}>+{c.occ.length - 3}</div>}
+                {c.occ.length > 3 && <div className="agenda-more">+{c.occ.length - 3}</div>}
               </div>
             </div>
           );
