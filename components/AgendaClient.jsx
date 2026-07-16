@@ -173,10 +173,13 @@ export default function AgendaClient() {
   return (
     <div className="agenda-wrap">
       <style>{`
-        .agenda-wrap{max-width:1100px;margin:0 auto;padding:1.5rem 1rem 4rem;}
+        .agenda-wrap{max-width:1100px;margin:0 auto;padding:1.5rem 1rem 4rem;overflow-x:hidden;}
+        .agenda-wrap button,.agenda-wrap .agenda-cell,.agenda-wrap .agenda-chip,.agenda-wrap .list-group-item{touch-action:manipulation;}
         .agenda-title{font-size:1.7rem;font-weight:700;}
         .agenda-toolbar .form-select,.agenda-toolbar .btn{font-size:1rem;padding:.5rem .9rem;}
-        .agenda-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+        .agenda-cal-card{padding:1rem;}
+        .agenda-cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;width:100%;}
+        .agenda-cal-grid>*{min-width:0;}
         .agenda-weekday{text-align:center;font-weight:600;color:#6b7280;font-size:.85rem;}
         .agenda-cell{min-height:92px;border-radius:8px;padding:5px;border:1px solid #eef0f2;background:#fff;overflow:hidden;}
         .agenda-cell--today{border:2px solid #111827;}
@@ -195,6 +198,7 @@ export default function AgendaClient() {
           .agenda-toolbar .form-select,.agenda-toolbar .btn{font-size:.95rem;padding:.5rem .7rem;}
           .agenda-cal-grid{gap:3px;}
           .agenda-weekday{font-size:.72rem;}
+          .agenda-cal-card{padding:.55rem;}
           .agenda-cell{min-height:66px;padding:3px;border-radius:6px;}
           .agenda-daynum{font-size:.82rem;}
           .agenda-chip{font-size:11px;padding:1px 4px;}
