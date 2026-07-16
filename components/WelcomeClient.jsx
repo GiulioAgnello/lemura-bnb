@@ -14,30 +14,46 @@ const LANGS = [
   { code: 'es', label: 'Español', flag: '🇪🇸' },
 ];
 
-// Etichette d'interfaccia (le UI, non i contenuti che arrivano tradotti dal backend)
 const T = {
-  it: { choose: 'Scegli la lingua', stay: 'Il tuo soggiorno', checkin: 'Check-in', checkout: 'Check-out', access: 'Come arrivare', wifi: 'WiFi', network: 'Rete', password: 'Password', copy: 'Copia', copied: 'Copiato!', weather: 'Meteo & spiaggia', windNow: 'Vento ora', advised: 'Spiaggia consigliata', rules: 'Regole della casa', discover: 'Scopri il Salento', beaches: 'Spiagge', towns: 'Borghi e città', nature: 'Natura', restaurants: 'Dove mangiare', experiences: 'Esperienze', expCta: 'Scopri le esperienze', openMap: 'Apri mappa', changeLang: 'Lingua', min: 'min', loading: 'Caricamento…', greet: 'Benvenuti', thanks: 'Grazie per averci scelto' },
-  en: { choose: 'Choose your language', stay: 'Your stay', checkin: 'Check-in', checkout: 'Check-out', access: 'Getting here', wifi: 'WiFi', network: 'Network', password: 'Password', copy: 'Copy', copied: 'Copied!', weather: 'Weather & beach', windNow: 'Wind now', advised: 'Recommended beach', rules: 'House rules', discover: 'Discover Salento', beaches: 'Beaches', towns: 'Towns & villages', nature: 'Nature', restaurants: 'Where to eat', experiences: 'Experiences', expCta: 'Discover the experiences', openMap: 'Open map', changeLang: 'Language', min: 'min', loading: 'Loading…', greet: 'Welcome', thanks: 'Thank you for choosing us' },
-  fr: { choose: 'Choisissez la langue', stay: 'Votre séjour', checkin: 'Arrivée', checkout: 'Départ', access: 'Comment venir', wifi: 'WiFi', network: 'Réseau', password: 'Mot de passe', copy: 'Copier', copied: 'Copié !', weather: 'Météo & plage', windNow: 'Vent', advised: 'Plage conseillée', rules: 'Règles de la maison', discover: 'Découvrir le Salento', beaches: 'Plages', towns: 'Villes et villages', nature: 'Nature', restaurants: 'Où manger', experiences: 'Expériences', expCta: 'Découvrir les expériences', openMap: 'Ouvrir la carte', changeLang: 'Langue', min: 'min', loading: 'Chargement…', greet: 'Bienvenue', thanks: 'Merci de nous avoir choisis' },
-  de: { choose: 'Sprache wählen', stay: 'Ihr Aufenthalt', checkin: 'Check-in', checkout: 'Check-out', access: 'Anreise', wifi: 'WLAN', network: 'Netzwerk', password: 'Passwort', copy: 'Kopieren', copied: 'Kopiert!', weather: 'Wetter & Strand', windNow: 'Wind jetzt', advised: 'Empfohlener Strand', rules: 'Hausregeln', discover: 'Salento entdecken', beaches: 'Strände', towns: 'Städte & Dörfer', nature: 'Natur', restaurants: 'Wo essen', experiences: 'Erlebnisse', expCta: 'Erlebnisse entdecken', openMap: 'Karte öffnen', changeLang: 'Sprache', min: 'Min', loading: 'Laden…', greet: 'Willkommen', thanks: 'Danke, dass Sie uns gewählt haben' },
-  es: { choose: 'Elige el idioma', stay: 'Tu estancia', checkin: 'Entrada', checkout: 'Salida', access: 'Cómo llegar', wifi: 'WiFi', network: 'Red', password: 'Contraseña', copy: 'Copiar', copied: '¡Copiado!', weather: 'Clima y playa', windNow: 'Viento', advised: 'Playa recomendada', rules: 'Normas de la casa', discover: 'Descubre el Salento', beaches: 'Playas', towns: 'Pueblos y ciudades', nature: 'Naturaleza', restaurants: 'Dónde comer', experiences: 'Experiencias', expCta: 'Descubre las experiencias', openMap: 'Abrir mapa', changeLang: 'Idioma', min: 'min', loading: 'Cargando…', greet: 'Bienvenidos', thanks: 'Gracias por elegirnos' },
+  it: { greet: 'Benvenuti', thanks: 'Grazie per averci scelto', casa: 'La Casa', exp: 'Esperienze & Salento', write: 'Scrivimi', checkin: 'Check-in', checkout: 'Check-out', access: 'Come arrivare', wifi: 'WiFi', network: 'Rete', password: 'Password', copy: 'Copia', copied: 'Copiato!', weather: 'Meteo & spiaggia', windNow: 'Vento ora', advised: 'Spiaggia consigliata', rules: 'Regole della casa', waste: 'Calendario differenziata', wasteHint: 'Il sacchetto va messo fuori la sera prima, davanti alla porta.', discover: 'Scopri il Salento', beaches: 'Spiagge', towns: 'Borghi e città', nature: 'Natura', restaurants: 'Dove mangiare', supermarkets: 'Supermercati', pharmacies: 'Farmacie', experiences: 'Esperienze', expCta: 'Scopri le esperienze', openMap: 'Apri mappa', changeLang: 'Lingua', min: 'min', loading: 'Caricamento…' },
+  en: { greet: 'Welcome', thanks: 'Thank you for choosing us', casa: 'The House', exp: 'Experiences & Salento', write: 'Message me', checkin: 'Check-in', checkout: 'Check-out', access: 'Getting here', wifi: 'WiFi', network: 'Network', password: 'Password', copy: 'Copy', copied: 'Copied!', weather: 'Weather & beach', windNow: 'Wind now', advised: 'Recommended beach', rules: 'House rules', waste: 'Waste calendar', wasteHint: 'Put the bag out the evening before, by the door.', discover: 'Discover Salento', beaches: 'Beaches', towns: 'Towns & villages', nature: 'Nature', restaurants: 'Where to eat', supermarkets: 'Supermarkets', pharmacies: 'Pharmacies', experiences: 'Experiences', expCta: 'Discover the experiences', openMap: 'Open map', changeLang: 'Language', min: 'min', loading: 'Loading…' },
+  fr: { greet: 'Bienvenue', thanks: 'Merci de nous avoir choisis', casa: 'La Maison', exp: 'Expériences & Salento', write: 'Écrivez-moi', checkin: 'Arrivée', checkout: 'Départ', access: 'Comment venir', wifi: 'WiFi', network: 'Réseau', password: 'Mot de passe', copy: 'Copier', copied: 'Copié !', weather: 'Météo & plage', windNow: 'Vent', advised: 'Plage conseillée', rules: 'Règles de la maison', waste: 'Calendrier des déchets', wasteHint: 'Sortez le sac la veille au soir, devant la porte.', discover: 'Découvrir le Salento', beaches: 'Plages', towns: 'Villes et villages', nature: 'Nature', restaurants: 'Où manger', supermarkets: 'Supermarchés', pharmacies: 'Pharmacies', experiences: 'Expériences', expCta: 'Découvrir les expériences', openMap: 'Ouvrir la carte', changeLang: 'Langue', min: 'min', loading: 'Chargement…' },
+  de: { greet: 'Willkommen', thanks: 'Danke, dass Sie uns gewählt haben', casa: 'Das Haus', exp: 'Erlebnisse & Salento', write: 'Schreiben Sie mir', checkin: 'Check-in', checkout: 'Check-out', access: 'Anreise', wifi: 'WLAN', network: 'Netzwerk', password: 'Passwort', copy: 'Kopieren', copied: 'Kopiert!', weather: 'Wetter & Strand', windNow: 'Wind jetzt', advised: 'Empfohlener Strand', rules: 'Hausregeln', waste: 'Müllkalender', wasteHint: 'Den Beutel am Vorabend vor die Tür stellen.', discover: 'Salento entdecken', beaches: 'Strände', towns: 'Städte & Dörfer', nature: 'Natur', restaurants: 'Wo essen', supermarkets: 'Supermärkte', pharmacies: 'Apotheken', experiences: 'Erlebnisse', expCta: 'Erlebnisse entdecken', openMap: 'Karte öffnen', changeLang: 'Sprache', min: 'Min', loading: 'Laden…' },
+  es: { greet: 'Bienvenidos', thanks: 'Gracias por elegirnos', casa: 'La Casa', exp: 'Experiencias & Salento', write: 'Escríbeme', checkin: 'Entrada', checkout: 'Salida', access: 'Cómo llegar', wifi: 'WiFi', network: 'Red', password: 'Contraseña', copy: 'Copiar', copied: '¡Copiado!', weather: 'Clima y playa', windNow: 'Viento', advised: 'Playa recomendada', rules: 'Normas de la casa', waste: 'Calendario de reciclaje', wasteHint: 'Saca la bolsa la noche anterior, frente a la puerta.', discover: 'Descubre el Salento', beaches: 'Playas', towns: 'Pueblos y ciudades', nature: 'Naturaleza', restaurants: 'Dónde comer', supermarkets: 'Supermercados', pharmacies: 'Farmacias', experiences: 'Experiencias', expCta: 'Descubre las experiencias', openMap: 'Abrir mapa', changeLang: 'Idioma', min: 'min', loading: 'Cargando…' },
 };
 
 const NOTE_CAT = {
-  dimora:     { it: 'Dimora antica — accortezze', en: 'Historic home — good to know', fr: 'Demeure ancienne — à savoir', de: 'Historisches Haus — gut zu wissen', es: 'Casa antigua — a tener en cuenta', icon: '🗝️' },
-  casa:       { it: 'Come funziona la casa', en: 'How the house works', fr: 'Fonctionnement de la maison', de: 'So funktioniert das Haus', es: 'Cómo funciona la casa', icon: '🏠' },
-  colazione:  { it: 'Colazione', en: 'Breakfast', fr: 'Petit-déjeuner', de: 'Frühstück', es: 'Desayuno', icon: '☕' },
-  spazzatura: { it: 'Raccolta differenziata', en: 'Waste sorting', fr: 'Tri des déchets', de: 'Mülltrennung', es: 'Reciclaje', icon: '♻️' },
-  servizio:   { it: 'Servizi utili vicino', en: 'Useful services nearby', fr: 'Services utiles à proximité', de: 'Nützliche Dienste in der Nähe', es: 'Servicios útiles cerca', icon: '🛒' },
-  emergenza:  { it: 'Numeri utili', en: 'Useful numbers', fr: 'Numéros utiles', de: 'Nützliche Nummern', es: 'Números útiles', icon: '📞' },
+  dimora:    { it: 'Dimora antica — accortezze', en: 'Historic home — good to know', fr: 'Demeure ancienne — à savoir', de: 'Historisches Haus — gut zu wissen', es: 'Casa antigua — a tener en cuenta', icon: '🗝️' },
+  casa:      { it: 'Come funziona la casa', en: 'How the house works', fr: 'Fonctionnement de la maison', de: 'So funktioniert das Haus', es: 'Cómo funciona la casa', icon: '🏠' },
+  colazione: { it: 'Colazione', en: 'Breakfast', fr: 'Petit-déjeuner', de: 'Frühstück', es: 'Desayuno', icon: '☕' },
+  emergenza: { it: 'Numeri utili', en: 'Useful numbers', fr: 'Numéros utiles', de: 'Nützliche Nummern', es: 'Números útiles', icon: '📞' },
 };
-const NOTE_ORDER = ['dimora', 'casa', 'colazione', 'spazzatura', 'servizio', 'emergenza'];
+const NOTE_ORDER = ['dimora', 'casa', 'colazione', 'emergenza'];
 
 const ZONE = {
   sternatia: { it: 'A Sternatia', en: 'In Sternatia', fr: 'À Sternatia', de: 'In Sternatia', es: 'En Sternatia' },
-  lecce:     { it: 'A Lecce', en: 'In Lecce', fr: 'À Lecce', de: 'In Lecce', es: 'En Lecce' },
+  lecce:     { it: 'A Lecce', en: 'In Lecce', fr: 'In Lecce', de: 'In Lecce', es: 'En Lecce' },
   salento:   { it: 'Nel Salento', en: 'Around Salento', fr: 'Dans le Salento', de: 'Im Salento', es: 'Por el Salento' },
 };
+const ZONE_ORDER = ['sternatia', 'lecce', 'salento'];
+
+const WASTE = {
+  organico:        { color: '#8b5e34', icon: '🥬', it: 'Organico', en: 'Organic', fr: 'Organique', de: 'Bioabfall', es: 'Orgánico' },
+  plastica:        { color: '#eab308', icon: '♻️', it: 'Plastica e lattine', en: 'Plastic & cans', fr: 'Plastique & canettes', de: 'Plastik & Dosen', es: 'Plástico y latas' },
+  carta:           { color: '#2563eb', icon: '📦', it: 'Carta e cartone', en: 'Paper & card', fr: 'Papier & carton', de: 'Papier & Karton', es: 'Papel y cartón' },
+  vetro:           { color: '#16a34a', icon: '🍾', it: 'Vetro', en: 'Glass', fr: 'Verre', de: 'Glas', es: 'Vidrio' },
+  indifferenziato: { color: '#6b7280', icon: '🗑️', it: 'Indifferenziato', en: 'General waste', fr: 'Déchets divers', de: 'Restmüll', es: 'Resto' },
+};
+const DAYS = {
+  mon: { it: 'Lunedì', en: 'Monday', fr: 'Lundi', de: 'Montag', es: 'Lunes' },
+  tue: { it: 'Martedì', en: 'Tuesday', fr: 'Mardi', de: 'Dienstag', es: 'Martes' },
+  wed: { it: 'Mercoledì', en: 'Wednesday', fr: 'Mercredi', de: 'Mittwoch', es: 'Miércoles' },
+  thu: { it: 'Giovedì', en: 'Thursday', fr: 'Jeudi', de: 'Donnerstag', es: 'Jueves' },
+  fri: { it: 'Venerdì', en: 'Friday', fr: 'Vendredi', de: 'Freitag', es: 'Viernes' },
+  sat: { it: 'Sabato', en: 'Saturday', fr: 'Samedi', de: 'Samstag', es: 'Sábado' },
+  sun: { it: 'Domenica', en: 'Sunday', fr: 'Dimanche', de: 'Sonntag', es: 'Domingo' },
+};
+const DAY_ORDER = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
 const degToCard = (d) => ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'][Math.round(d / 45) % 8];
 const mapsUrl = (q) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
@@ -49,9 +65,14 @@ export default function WelcomeClient() {
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [splash, setSplash] = useState(false);
+  const [tab, setTab] = useState('casa');
   const splashShown = useRef(false);
 
-  // Splash iniziale (~2s) solo alla prima apertura, non al cambio lingua.
+  useEffect(() => {
+    const saved = typeof window !== 'undefined' ? window.localStorage.getItem('lemura_welcome_lang') : null;
+    if (saved && LANGS.some((l) => l.code === saved)) setLang(saved);
+  }, []);
+
   useEffect(() => {
     if (lang && !splashShown.current) {
       splashShown.current = true;
@@ -60,12 +81,6 @@ export default function WelcomeClient() {
       return () => clearTimeout(tmr);
     }
   }, [lang]);
-
-  // Lingua salvata
-  useEffect(() => {
-    const saved = typeof window !== 'undefined' ? window.localStorage.getItem('lemura_welcome_lang') : null;
-    if (saved && LANGS.some((l) => l.code === saved)) setLang(saved);
-  }, []);
 
   const load = useCallback(async (lg) => {
     setLoading(true);
@@ -77,7 +92,6 @@ export default function WelcomeClient() {
 
   useEffect(() => { if (lang) load(lang); }, [lang, load]);
 
-  // Meteo (una volta)
   useEffect(() => {
     if (!lang) return;
     fetch(`https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&current=temperature_2m,wind_speed_10m,wind_direction_10m&timezone=Europe/Rome`)
@@ -93,7 +107,6 @@ export default function WelcomeClient() {
     navigator.clipboard?.writeText(pw).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1800); });
   };
 
-  // Consiglio spiaggia da vento
   const windAdvice = useMemo(() => {
     if (!weather || !data?.wind_beach_rules) return null;
     const card = degToCard(weather.wind_direction_10m);
@@ -128,20 +141,131 @@ export default function WelcomeClient() {
   const luoghi = data?.luoghi || [];
   const notesByCat = (c) => note.filter((n) => n.categoria === c);
   const poiByCat = (c) => luoghi.filter((l) => l.tipo === 'poi' && l.categoria === c);
-  const restByZone = (z) => luoghi.filter((l) => l.tipo === 'ristorante' && l.zona === z);
+  const byTypeZone = (tp) => luoghi.filter((l) => l.tipo === tp);
+
+  const waHref = info.host?.whatsapp
+    ? `https://wa.me/${info.host.whatsapp.replace(/\D/g, '')}`
+    : info.host?.phone ? `tel:${info.host.phone.replace(/\s/g, '')}` : undefined;
+
+  /* ---------------- Sezione CASA ---------------- */
+  const renderCasa = () => (
+    <>
+      <div className="wl-cards">
+        {info.checkin && <InfoCard icon="🕒" title={t.checkin} text={info.checkin} />}
+        {info.checkout && <InfoCard icon="🧳" title={t.checkout} text={info.checkout} />}
+        {info.access && <InfoCard icon="🚗" title={t.access} text={info.access} />}
+      </div>
+
+      {info.wifi?.network && (
+        <div className="wl-wifi">
+          <div className="wl-wifi-icn">📶</div>
+          <div className="flex-grow-1">
+            <div className="wl-wifi-lab">{t.wifi}</div>
+            <div className="wl-wifi-net">{t.network}: <b>{info.wifi.network}</b></div>
+            <div className="wl-wifi-net">{t.password}: <b>{info.wifi.password}</b></div>
+          </div>
+          {info.wifi.password && (
+            <button className="wl-copy" onClick={() => copyWifi(info.wifi.password)}>{copied ? t.copied : t.copy}</button>
+          )}
+        </div>
+      )}
+
+      {NOTE_ORDER.map((cat) => {
+        const items = notesByCat(cat);
+        if (items.length === 0) return null;
+        const meta = NOTE_CAT[cat];
+        return (
+          <section key={cat} className="wl-section">
+            <h2 className="wl-sec-title">{meta.icon} {meta[lang] || meta.it}</h2>
+            <div className="wl-notes">
+              {items.map((n, i) => (
+                <div key={i} className="wl-note">
+                  <div className="wl-note-title">{n.icona ? n.icona + ' ' : ''}{n.titolo}</div>
+                  {n.testo && <div className="wl-note-text">{n.testo}</div>}
+                  {n.valore && (cat === 'emergenza'
+                    ? <a className="wl-note-link" href={`tel:${n.valore.replace(/\s/g, '')}`}>{n.valore}</a>
+                    : <a className="wl-note-link" href={mapsUrl(n.valore)} target="_blank" rel="noopener noreferrer">{t.openMap}</a>)}
+                </div>
+              ))}
+            </div>
+          </section>
+        );
+      })}
+
+      <WasteCalendar waste={info.waste} t={t} lang={lang} />
+
+      {info.rules && (
+        <section className="wl-section">
+          <h2 className="wl-sec-title">📋 {t.rules}</h2>
+          <div className="wl-note"><div className="wl-note-text" style={{ whiteSpace: 'pre-line' }}>{info.rules}</div></div>
+        </section>
+      )}
+    </>
+  );
+
+  /* ---------------- Sezione ESPERIENZE ---------------- */
+  const renderEsperienze = () => (
+    <>
+      {windAdvice && (
+        <div className="wl-weather">
+          <div className="wl-weather-head">
+            <span className="wl-weather-icn">🌬️</span>
+            <div>
+              <div className="wl-sec-title mb-0" style={{ color: '#fff' }}>{t.weather}</div>
+              {weather && <div className="wl-weather-now">{Math.round(weather.temperature_2m)}°C · {t.windNow}: {windAdvice.rule.wind_label} · {Math.round(weather.wind_speed_10m)} km/h</div>}
+            </div>
+          </div>
+          <div className="wl-weather-advice">
+            <div className="wl-advised">{t.advised}</div>
+            <div className="wl-coast">{windAdvice.rule.coast_label}</div>
+            {windAdvice.beaches.length > 0 && (
+              <div className="wl-beachchips">
+                {windAdvice.beaches.map((b) => (
+                  <a key={b.nome} className="wl-beachchip" href={mapsUrl(b.maps_query || b.nome)} target="_blank" rel="noopener noreferrer">📍 {b.nome}</a>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {luoghi.some((l) => l.tipo === 'poi') && (
+        <section className="wl-section">
+          <h2 className="wl-sec-title wl-discover">🌊 {t.discover}</h2>
+          {[['beach', t.beaches], ['town', t.towns], ['nature', t.nature]].map(([cat, label]) => {
+            const items = poiByCat(cat);
+            if (items.length === 0) return null;
+            return (
+              <div key={cat} className="mb-3">
+                <h3 className="wl-subcat">{label}</h3>
+                <div className="wl-poi-grid">{items.map((p) => <PoiCard key={p.nome} p={p} t={t} />)}</div>
+              </div>
+            );
+          })}
+        </section>
+      )}
+
+      <ZoneList tipo="ristorante" title={`🍽️ ${t.restaurants}`} luoghi={byTypeZone('ristorante')} lang={lang} t={t} />
+      <ZoneList tipo="supermercato" title={`🛒 ${t.supermarkets}`} luoghi={byTypeZone('supermercato')} lang={lang} t={t} />
+      <ZoneList tipo="farmacia" title={`💊 ${t.pharmacies}`} luoghi={byTypeZone('farmacia')} lang={lang} t={t} />
+
+      <section className="wl-section">
+        <h2 className="wl-sec-title">✨ {t.experiences}</h2>
+        <a className="wl-exp" href="/esperienze">{t.expCta} →</a>
+      </section>
+    </>
+  );
 
   return (
     <div className="wl">
       <style>{wlCss}</style>
 
-      {/* Splash iniziale */}
       <div className={`wl-splash${splash ? '' : ' wl-splash--hide'}`} aria-hidden={!splash}>
         <img className="wl-splash-logo" src="/logo_no_background.png" alt="Le Mura degli Angeli" />
         <div className="wl-splash-brand">Le Mura degli Angeli</div>
         <div className="wl-splash-text">{t.thanks}</div>
       </div>
 
-      {/* Barra unica: logo + Benvenuti + lingua */}
       <div className="wl-topbar">
         <div className="wl-hdr-brand">
           <img className="wl-hdr-logo" src="/logo_no_background.png" alt="Le Mura degli Angeli" />
@@ -152,147 +276,31 @@ export default function WelcomeClient() {
         </select>
       </div>
 
-      {loading && <p className="text-center text-muted py-5">{t.loading}</p>}
+      {info.welcome && info.welcome.trim().length > 12 && <p className="wl-welcome-msg">{info.welcome}</p>}
 
-      {info.welcome && info.welcome.trim().length > 12 && (
-        <p className="wl-welcome-msg">{info.welcome}</p>
-      )}
+      {/* Tab desktop */}
+      <div className="wl-tabs">
+        <button className={`wl-tab${tab === 'casa' ? ' wl-tab--active' : ''}`} onClick={() => setTab('casa')}>🏠 {t.casa}</button>
+        <button className={`wl-tab${tab === 'exp' ? ' wl-tab--active' : ''}`} onClick={() => setTab('exp')}>🌊 {t.exp}</button>
+      </div>
+
+      {loading && <p className="text-center text-muted py-4">{t.loading}</p>}
 
       <div className="wl-body">
-        {/* Info soggiorno */}
-        <div className="wl-cards">
-          {info.checkin && <InfoCard icon="🕒" title={t.checkin} text={info.checkin} />}
-          {info.checkout && <InfoCard icon="🧳" title={t.checkout} text={info.checkout} />}
-          {info.access && <InfoCard icon="🚗" title={t.access} text={info.access} />}
-        </div>
+        {tab === 'casa' ? renderCasa() : renderEsperienze()}
+      </div>
 
-        {/* WiFi */}
-        {info.wifi?.network && (
-          <div className="wl-wifi">
-            <div className="wl-wifi-icn">📶</div>
-            <div className="flex-grow-1">
-              <div className="wl-wifi-lab">{t.wifi}</div>
-              <div className="wl-wifi-net">{t.network}: <b>{info.wifi.network}</b></div>
-              <div className="wl-wifi-net">{t.password}: <b>{info.wifi.password}</b></div>
-            </div>
-            {info.wifi.password && (
-              <button className="wl-copy" onClick={() => copyWifi(info.wifi.password)}>{copied ? t.copied : t.copy}</button>
-            )}
-          </div>
-        )}
-
-        {/* Meteo & spiaggia */}
-        {windAdvice && (
-          <div className="wl-weather">
-            <div className="wl-weather-head">
-              <span className="wl-weather-icn">🌬️</span>
-              <div>
-                <div className="wl-sec-title mb-0">{t.weather}</div>
-                {weather && <div className="wl-weather-now">{Math.round(weather.temperature_2m)}°C · {t.windNow}: {windAdvice.rule.wind_label} · {Math.round(weather.wind_speed_10m)} km/h</div>}
-              </div>
-            </div>
-            <div className="wl-weather-advice">
-              <div className="wl-advised">{t.advised}</div>
-              <div className="wl-coast">{windAdvice.rule.coast_label}</div>
-              {windAdvice.beaches.length > 0 && (
-                <div className="wl-beachchips">
-                  {windAdvice.beaches.map((b) => (
-                    <a key={b.nome} className="wl-beachchip" href={mapsUrl(b.maps_query || b.nome)} target="_blank" rel="noopener noreferrer">{b.nome}</a>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Note per categoria */}
-        {NOTE_ORDER.map((cat) => {
-          const items = notesByCat(cat);
-          if (items.length === 0) return null;
-          const meta = NOTE_CAT[cat];
-          return (
-            <section key={cat} className="wl-section">
-              <h2 className="wl-sec-title">{meta.icon} {meta[lang] || meta.it}</h2>
-              <div className="wl-notes">
-                {items.map((n, i) => (
-                  <div key={i} className="wl-note">
-                    <div className="wl-note-title">{n.icona ? n.icona + ' ' : ''}{n.titolo}</div>
-                    {n.testo && <div className="wl-note-text">{n.testo}</div>}
-                    {n.valore && (cat === 'emergenza'
-                      ? <a className="wl-note-link" href={`tel:${n.valore.replace(/\s/g, '')}`}>{n.valore}</a>
-                      : <a className="wl-note-link" href={mapsUrl(n.valore)} target="_blank" rel="noopener noreferrer">{t.openMap}</a>)}
-                  </div>
-                ))}
-              </div>
-            </section>
-          );
-        })}
-
-        {/* Regole */}
-        {info.rules && (
-          <section className="wl-section">
-            <h2 className="wl-sec-title">📋 {t.rules}</h2>
-            <div className="wl-note"><div className="wl-note-text" style={{ whiteSpace: 'pre-line' }}>{info.rules}</div></div>
-          </section>
-        )}
-
-        {/* Scopri il Salento */}
-        {luoghi.some((l) => l.tipo === 'poi') && (
-          <section className="wl-section">
-            <h2 className="wl-sec-title wl-discover">🌊 {t.discover}</h2>
-            {[['beach', t.beaches], ['town', t.towns], ['nature', t.nature]].map(([cat, label]) => {
-              const items = poiByCat(cat);
-              if (items.length === 0) return null;
-              return (
-                <div key={cat} className="mb-3">
-                  <h3 className="wl-subcat">{label}</h3>
-                  <div className="wl-poi-grid">
-                    {items.map((p) => <PoiCard key={p.nome} p={p} t={t} />)}
-                  </div>
-                </div>
-              );
-            })}
-          </section>
-        )}
-
-        {/* Ristoranti */}
-        {luoghi.some((l) => l.tipo === 'ristorante') && (
-          <section className="wl-section">
-            <h2 className="wl-sec-title">🍽️ {t.restaurants}</h2>
-            {['sternatia', 'lecce', 'salento'].map((z) => {
-              const items = restByZone(z);
-              if (items.length === 0) return null;
-              return (
-                <div key={z} className="mb-3">
-                  <h3 className="wl-subcat">{ZONE[z][lang] || ZONE[z].it}</h3>
-                  <div className="wl-notes">
-                    {items.map((r) => (
-                      <a key={r.nome} className="wl-note wl-rest" href={mapsUrl(r.maps_query || r.nome)} target="_blank" rel="noopener noreferrer">
-                        <div className="wl-note-title">{r.nome} {r.cucina ? <span className="wl-rtag">{r.cucina}</span> : null}</div>
-                        {r.descrizione && <div className="wl-note-text">{r.descrizione}</div>}
-                      </a>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </section>
-        )}
-
-        {/* Esperienze */}
-        <section className="wl-section">
-          <h2 className="wl-sec-title">✨ {t.experiences}</h2>
-          <a className="wl-exp" href="/esperienze">{t.expCta} →</a>
-        </section>
-
-        {/* Contatto host */}
-        {info.host?.phone && (
-          <div className="wl-host">
-            {info.host.whatsapp
-              ? <a className="wl-host-btn" href={`https://wa.me/${info.host.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer">💬 {info.host.name || 'Host'} · WhatsApp</a>
-              : <a className="wl-host-btn" href={`tel:${info.host.phone.replace(/\s/g, '')}`}>📞 {info.host.name || 'Host'}</a>}
-          </div>
-        )}
+      {/* Console mobile */}
+      <div className="wl-console">
+        <button className={`wl-console-item${tab === 'casa' ? ' wl-console-item--active' : ''}`} onClick={() => setTab('casa')}>
+          <span className="wl-console-icn">🏠</span>{t.casa}
+        </button>
+        <button className={`wl-console-item${tab === 'exp' ? ' wl-console-item--active' : ''}`} onClick={() => setTab('exp')}>
+          <span className="wl-console-icn">🌊</span>{t.exp}
+        </button>
+        <a className="wl-console-item wl-console-wa" href={waHref || '#'} target="_blank" rel="noopener noreferrer">
+          <span className="wl-console-icn">💬</span>{t.write}
+        </a>
       </div>
     </div>
   );
@@ -319,6 +327,60 @@ function PoiCard({ p, t }) {
         <div className="wl-poi-map">📍 {t.openMap}</div>
       </div>
     </a>
+  );
+}
+
+// Lista luoghi (ristoranti / supermercati / farmacie) raggruppati per zona, Sternatia prima.
+function ZoneList({ title, luoghi, lang, t }) {
+  if (!luoghi || luoghi.length === 0) return null;
+  return (
+    <section className="wl-section">
+      <h2 className="wl-sec-title">{title}</h2>
+      {ZONE_ORDER.map((z) => {
+        const items = luoghi.filter((l) => l.zona === z);
+        if (items.length === 0) return null;
+        return (
+          <div key={z} className="mb-3">
+            <h3 className="wl-subcat">{ZONE[z][lang] || ZONE[z].it}</h3>
+            <div className="wl-notes">
+              {items.map((r) => (
+                <a key={r.nome} className="wl-note wl-rest" href={mapsUrl(r.maps_query || r.nome)} target="_blank" rel="noopener noreferrer">
+                  <div className="wl-note-title">{r.nome} {r.cucina ? <span className="wl-rtag">{r.cucina}</span> : null}</div>
+                  {r.descrizione && <div className="wl-note-text">{r.descrizione}</div>}
+                </a>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </section>
+  );
+}
+
+// Calendario differenziata: righe giorno → tipo rifiuto, + nota.
+function WasteCalendar({ waste, t, lang }) {
+  if (!waste) return null;
+  const sched = waste.schedule || {};
+  const days = DAY_ORDER.filter((d) => sched[d] && WASTE[sched[d]]);
+  if (days.length === 0 && !waste.note) return null;
+  return (
+    <section className="wl-section">
+      <h2 className="wl-sec-title">♻️ {t.waste}</h2>
+      {days.length > 0 && (
+        <div className="wl-waste">
+          {days.map((d) => {
+            const w = WASTE[sched[d]];
+            return (
+              <div key={d} className="wl-waste-row">
+                <span className="wl-waste-day">{DAYS[d][lang] || DAYS[d].it}</span>
+                <span className="wl-waste-type"><span className="wl-waste-dot" style={{ background: w.color }} />{w.icon} {w[lang] || w.it}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+      <div className="wl-waste-note">🌙 {waste.note || t.wasteHint}</div>
+    </section>
   );
 }
 
@@ -349,6 +411,9 @@ const wlCss = `
   .wl-hdr-greet{font-family:var(--font-display,serif);font-weight:700;font-size:1.35rem;color:#111827;}
   .wl-langsel{border:1px solid #e5e7eb;border-radius:10px;padding:.35rem .5rem;font-size:.95rem;}
   .wl-welcome-msg{max-width:640px;margin:1.2rem auto .2rem;padding:0 1.2rem;text-align:center;font-size:1.05rem;line-height:1.6;color:#374151;}
+  .wl-tabs{display:flex;gap:.8rem;max-width:640px;margin:1rem auto 0;padding:0 1rem;}
+  .wl-tab{flex:1;padding:1rem;border:1px solid #e5e7eb;border-radius:16px;background:#fff;font-size:1.1rem;font-weight:700;color:#374151;cursor:pointer;transition:.15s;}
+  .wl-tab--active{background:#0d9488;border-color:#0d9488;color:#fff;box-shadow:0 6px 18px rgba(13,148,136,.3);}
   .wl-body{padding:1.2rem 1rem 3rem;}
   .wl-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.7rem;margin-bottom:1rem;}
   .wl-card{background:#fff;border:1px solid #eef0f2;border-radius:16px;padding:1rem;}
@@ -368,7 +433,7 @@ const wlCss = `
   .wl-advised{text-transform:uppercase;letter-spacing:.05em;font-size:.78rem;opacity:.85;}
   .wl-coast{font-size:1.15rem;font-weight:700;margin:.15rem 0 .5rem;}
   .wl-beachchips{display:flex;flex-wrap:wrap;gap:.4rem;}
-  .wl-beachchip{background:#fff;color:#0369a1;border-radius:20px;padding:.35rem .8rem;font-weight:600;font-size:.9rem;text-decoration:none;}
+  .wl-beachchip{background:#fff;color:#0369a1;border-radius:20px;padding:.4rem .85rem;font-weight:600;font-size:.92rem;text-decoration:none;}
   .wl-section{margin-bottom:1.6rem;}
   .wl-sec-title{font-family:var(--font-display,serif);font-size:1.3rem;font-weight:700;margin-bottom:.7rem;}
   .wl-discover{border-top:1px solid #eee;padding-top:1.2rem;}
@@ -379,6 +444,13 @@ const wlCss = `
   .wl-note-text{font-size:.98rem;line-height:1.55;color:#374151;margin-top:.2rem;}
   .wl-note-link{display:inline-block;margin-top:.4rem;color:#0d9488;font-weight:600;text-decoration:none;}
   .wl-rest .wl-rtag{background:#f0fdfa;color:#0d9488;border-radius:10px;padding:.1rem .5rem;font-size:.78rem;font-weight:600;margin-left:.4rem;}
+  .wl-waste{background:#fff;border:1px solid #eef0f2;border-radius:14px;overflow:hidden;margin-bottom:.6rem;}
+  .wl-waste-row{display:flex;align-items:center;justify-content:space-between;padding:.7rem 1rem;border-bottom:1px solid #f3f4f6;}
+  .wl-waste-row:last-child{border-bottom:none;}
+  .wl-waste-day{font-weight:600;}
+  .wl-waste-type{display:flex;align-items:center;gap:.5rem;font-weight:600;}
+  .wl-waste-dot{width:12px;height:12px;border-radius:50%;display:inline-block;}
+  .wl-waste-note{background:#fef9c3;border-radius:12px;padding:.7rem .9rem;font-size:.95rem;color:#713f12;}
   .wl-poi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.8rem;}
   .wl-poi{background:#fff;border:1px solid #eef0f2;border-radius:16px;overflow:hidden;text-decoration:none;color:inherit;display:flex;flex-direction:column;}
   .wl-poi-img{height:120px;background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;font-size:2rem;}
@@ -389,11 +461,16 @@ const wlCss = `
   .wl-poi-desc{font-size:.92rem;line-height:1.5;color:#374151;margin:.3rem 0;}
   .wl-poi-map{font-size:.88rem;color:#0d9488;font-weight:600;}
   .wl-exp{display:inline-block;background:#111827;color:#fff;border-radius:12px;padding:.8rem 1.2rem;font-weight:600;text-decoration:none;}
-  .wl-host{position:sticky;bottom:1rem;text-align:center;margin-top:1rem;}
-  .wl-host-btn{display:inline-block;background:#25d366;color:#fff;border-radius:30px;padding:.8rem 1.5rem;font-weight:700;text-decoration:none;box-shadow:0 6px 20px rgba(0,0,0,.2);}
+  .wl-console{display:none;}
   @media (max-width:576px){
-    .wl-hero h1{font-size:1.4rem;}
+    .wl-tabs{display:none;}
+    .wl-body{padding-bottom:5.5rem;}
     .wl-sec-title{font-size:1.2rem;}
     .wl-poi-grid{grid-template-columns:1fr;}
+    .wl-console{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;background:#fff;border-top:1px solid #e5e7eb;box-shadow:0 -4px 16px rgba(0,0,0,.08);}
+    .wl-console-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:.55rem 0 .7rem;border:none;background:none;font-size:.72rem;font-weight:600;color:#6b7280;text-decoration:none;cursor:pointer;}
+    .wl-console-icn{font-size:1.35rem;line-height:1;}
+    .wl-console-item--active{color:#0d9488;}
+    .wl-console-wa{color:#15803d;}
   }
 `;

@@ -2879,6 +2879,34 @@ function lemura_wl_pick( $post_id, $prefix, $lang ) {
     return $v;
 }
 
+// Giorni della settimana del calendario spazzatura.
+function lemura_wl_waste_days() {
+    return array( 'mon' => 'Lunedì', 'tue' => 'Martedì', 'wed' => 'Mercoledì', 'thu' => 'Giovedì', 'fri' => 'Venerdì', 'sat' => 'Sabato', 'sun' => 'Domenica' );
+}
+
+// 7 select (uno per giorno) per il calendario differenziata.
+function lemura_wl_waste_fields() {
+    $choices = array(
+        'organico'        => 'Organico',
+        'plastica'        => 'Plastica e lattine',
+        'carta'           => 'Carta e cartone',
+        'vetro'           => 'Vetro',
+        'indifferenziato' => 'Indifferenziato',
+    );
+    $out = array();
+    foreach ( lemura_wl_waste_days() as $k => $lab ) {
+        $out[] = array(
+            'key'      => "field_waste_{$k}",
+            'label'    => "Spazzatura — {$lab}",
+            'name'     => "waste_{$k}",
+            'type'     => 'select',
+            'allow_null' => 1,
+            'choices'  => $choices,
+        );
+    }
+    return $out;
+}
+
 // ---- CPT ----
 add_action( 'init', function () {
     register_post_type( 'welcome_info', array(
@@ -2924,7 +2952,9 @@ add_action( 'acf/init', function () {
             lemura_wl_i18n( 'w_checkin',  'Check-in (orari + come entrare)' ),
             lemura_wl_i18n( 'w_checkout', 'Check-out' ),
             lemura_wl_i18n( 'w_access',   'Come arrivare / parcheggio' ),
-            lemura_wl_i18n( 'w_rules',    'Regole della casa' )
+            lemura_wl_i18n( 'w_rules',    'Regole della casa' ),
+            lemura_wl_waste_fields(),
+            lemura_wl_i18n( 'waste_note', 'Spazzatura — nota (es. sacchetto la sera prima davanti alla porta)' )
         ),
         'location' => array( array( array( 'param' => 'post_type', 'operator' => '==', 'value' => 'welcome_info' ) ) ),
     ) );
@@ -2956,7 +2986,7 @@ add_action( 'acf/init', function () {
         'title'  => 'Luogo / Ristorante',
         'fields' => array_merge(
             array(
-                array( 'key' => 'field_l_tipo', 'label' => 'Tipo', 'name' => 'l_tipo', 'type' => 'select', 'default_value' => 'poi', 'choices' => array( 'poi' => 'Punto di interesse', 'ristorante' => 'Ristorante' ) ),
+                array( 'key' => 'field_l_tipo', 'label' => 'Tipo', 'name' => 'l_tipo', 'type' => 'select', 'default_value' => 'poi', 'choices' => array( 'poi' => 'Punto di interesse', 'ristorante' => 'Ristorante', 'supermercato' => 'Supermercato', 'farmacia' => 'Farmacia' ) ),
                 array( 'key' => 'field_l_cat', 'label' => 'Categoria (POI)', 'name' => 'l_cat', 'type' => 'select', 'allow_null' => 1, 'choices' => array( 'beach' => 'Spiaggia', 'town' => 'Borgo / Città', 'nature' => 'Natura' ) ),
                 array( 'key' => 'field_l_coast', 'label' => 'Costa (spiagge)', 'name' => 'l_coast', 'type' => 'select', 'allow_null' => 1, 'choices' => array( 'adriatico' => 'Adriatico', 'ionio' => 'Ionio' ) ),
                 array( 'key' => 'field_l_zona', 'label' => 'Zona (ristoranti)', 'name' => 'l_zona', 'type' => 'select', 'allow_null' => 1, 'choices' => array( 'sternatia' => 'Sternatia', 'lecce' => 'Lecce', 'salento' => 'Salento' ) ),
@@ -3023,6 +3053,11 @@ add_action( 'rest_api_init', function () {
                     'wifi'     => array( 'network' => get_post_meta( $pid, 'w_wifi_net', true ), 'password' => get_post_meta( $pid, 'w_wifi_pass', true ) ),
                     'host'     => array( 'name' => get_post_meta( $pid, 'w_host_name', true ), 'phone' => get_post_meta( $pid, 'w_host_phone', true ), 'whatsapp' => get_post_meta( $pid, 'w_host_wa', true ) ),
                 );
+                $schedule = array();
+                foreach ( array_keys( lemura_wl_waste_days() ) as $d ) {
+                    $schedule[ $d ] = get_post_meta( $pid, "waste_{$d}", true );
+                }
+                $info['waste'] = array( 'schedule' => $schedule, 'note' => lemura_wl_pick( $pid, 'waste_note', $lang ) );
             }
 
             // Note
